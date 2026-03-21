@@ -12,7 +12,6 @@ import authRoutes from './routes/auth';
 import complaintRoutes from './routes/complaints';
 import messageRoutes from './routes/messages';
 import { officerRouter, ministryRouter } from './routes/officers';
-import grievanceRoutes from "./routes/grievance";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -47,7 +46,6 @@ app.use('/api/complaints', complaintRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/officers', officerRouter);
 app.use('/api/ministries', ministryRouter);
-app.use("/api/complaints", grievanceRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

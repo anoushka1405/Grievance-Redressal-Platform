@@ -25,16 +25,22 @@ export default function RegisterGrievance() {
   const [urgency, setUrgency] = useState<'low' | 'medium' | 'high'>('medium');
   const [documents, setDocuments] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  interface MinistriesResponse {
+    ministries: Ministry[];
+  }
 
-  const { data: minData } = useQuery({
-    queryKey: ['ministries'],
-    queryFn: () => ministriesApi.list(),
-  });
+// 1. Ensure the type is recognized
+const { data: minData, isLoading, error } = useQuery<MinistriesResponse>({
+  queryKey: ['ministries'],
+  queryFn: () => ministriesApi.list().then(res => res.data),
+});
 
-  const ministries: Ministry[] = minData?.data?.ministries || [];
-  const filtered = ministries.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const selectedM = ministries.find(m => m.id === selectedMinistry);
-
+// 2. Simplify the assignment
+const ministries: Ministry[] = minData?.ministries ?? [];
+const filtered = ministries.filter((m: Ministry) =>
+  m.name.toLowerCase().includes(searchQuery.toLowerCase())
+);
+const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
   const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setDocuments(prev => [...prev, ...files].slice(0, 5));
@@ -111,7 +117,7 @@ export default function RegisterGrievance() {
                     <div className="font-medium text-sm text-gray-800">{m.name}</div>
                     <div className="text-xs text-gray-500 mt-1">Contact: {m.contact} · Escalation Level {m.escalation_level}</div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {m.categories.slice(0, 4).map(cat => (
+                      {m.categories.slice(0, 4).map((cat: string) => (
                         <span key={cat} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{cat}</span>
                       ))}
                     </div>
