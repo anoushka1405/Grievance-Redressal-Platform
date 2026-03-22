@@ -11,6 +11,22 @@ import { CheckCircle2, Search, Upload, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const cityList = [
+  "Delhi, Delhi",
+  "Mumbai, Maharashtra",
+  "Pune, Maharashtra",
+  "Bangalore, Karnataka",
+  "Hyderabad, Telangana",
+  "Chennai, Tamil Nadu",
+  "Kolkata, West Bengal",
+  "Ahmedabad, Gujarat",
+  "Jaipur, Rajasthan",
+  "Lucknow, Uttar Pradesh",
+  "Bhopal, Madhya Pradesh",
+  "Chandigarh, Chandigarh",
+  "Other"
+];
+
 export default function RegisterGrievance() {
   const router = useRouter();
   const { user } = useAuth();
@@ -22,19 +38,28 @@ export default function RegisterGrievance() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isOther, setIsOther] = useState(false);
   const [urgency, setUrgency] = useState<'low' | 'medium' | 'high'>('medium');
   const [documents, setDocuments] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  interface MinistriesResponse {
+    ministries: Ministry[];
+  }
 
-  const { data: minData } = useQuery({
-    queryKey: ['ministries'],
-    queryFn: () => ministriesApi.list(),
-  });
+// 1. Ensure the type is recognized
+const { data: minData, isLoading, error } = useQuery<MinistriesResponse>({
+  queryKey: ['ministries'],
+  queryFn: () => ministriesApi.list().then(res => res.data),
+});
 
-  const ministries: Ministry[] = minData?.data?.ministries || [];
-  const filtered = ministries.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const selectedM = ministries.find(m => m.id === selectedMinistry);
-
+// 2. Simplify the assignment
+const ministries: Ministry[] = minData?.ministries ?? [];
+const filtered = ministries.filter((m: Ministry) =>
+  m.name.toLowerCase().includes(searchQuery.toLowerCase())
+);
+const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
   const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setDocuments(prev => [...prev, ...files].slice(0, 5));
@@ -47,7 +72,8 @@ export default function RegisterGrievance() {
     setLoading(true);
     try {
       const fd = new FormData();
-      fd.append('ministryId', selectedMinistry);
+      console.log("Selected Ministry:", selectedMinistry);
+      fd.append('ministryId', String(selectedMinistry));
       fd.append('category', category);
       fd.append('description', description);
       fd.append('location', location);
@@ -111,7 +137,7 @@ export default function RegisterGrievance() {
                     <div className="font-medium text-sm text-gray-800">{m.name}</div>
                     <div className="text-xs text-gray-500 mt-1">Contact: {m.contact} · Escalation Level {m.escalation_level}</div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {m.categories.slice(0, 4).map(cat => (
+                      {m.categories.slice(0, 4).map((cat: string) => (
                         <span key={cat} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{cat}</span>
                       ))}
                     </div>
@@ -143,8 +169,58 @@ export default function RegisterGrievance() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
-                  <input className="input" placeholder="City, State" value={location} onChange={e => setLocation(e.target.value)} />
+                  <div className="relative">
+  <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+
+  <input
+    className="input"
+    placeholder="Search city..."
+    value={locationQuery}
+    onChange={(e) => {
+      setLocationQuery(e.target.value);
+      setShowDropdown(true);
+    }}
+    onFocus={() => setShowDropdown(true)}
+  />
+
+  {showDropdown && (
+    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 max-h-48 overflow-y-auto shadow">
+      {cityList
+        .filter(city =>
+          city.toLowerCase().includes(locationQuery.toLowerCase())
+        )
+        .map((city, i) => (
+          <div
+            key={i}
+            onClick={() => {
+              if (city === "Other") {
+                setIsOther(true);
+                setLocation('');
+                setLocationQuery('');
+              } else {
+                setIsOther(false);
+                setLocation(city);
+                setLocationQuery(city);
+              }
+              setShowDropdown(false);
+            }}
+            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+          >
+            {city}
+          </div>
+        ))}
+    </div>
+  )}
+
+  {isOther && (
+    <input
+      className="input mt-2"
+      placeholder="Enter your city"
+      value={location}
+      onChange={(e) => setLocation(e.target.value)}
+    />
+  )}
+</div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Urgency Level *</label>

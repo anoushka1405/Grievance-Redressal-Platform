@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
   timeout: 15000,
 });
 
@@ -29,49 +29,46 @@ api.interceptors.response.use(
 
 export default api;
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// ── Auth ──
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post('/api/auth/login', { email, password }),
-  register: (data: Record<string, unknown>) =>
-    api.post('/api/auth/register', data),
-  me: () => api.get('/api/auth/me'),
+  login: (email: string, password: string) => api.post('/auth/login', { email, password }),
+  register: (data: Record<string, unknown>) => api.post('/auth/register', data),
 };
 
-// ── Complaints ────────────────────────────────────────────────────────────────
+// ── Complaints ──
 export const complaintsApi = {
   list: (params?: Record<string, string>) =>
-    api.get('/api/complaints', { params }),
+    api.get('/complaints', { params }),        
   get: (id: string) =>
-    api.get(`/api/complaints/${id}`),
+    api.get(`/complaints/${id}`),               
   create: (formData: FormData) =>
-    api.post('/api/complaints', formData, {
+    api.post('/complaints', formData, {        
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   updateStatus: (id: string, formData: FormData) =>
-    api.patch(`/api/complaints/${id}/status`, formData, {
+    api.patch(`/complaints/${id}/status`, formData, {  
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   rate: (id: string, rating: number, review?: string) =>
-    api.post(`/api/complaints/${id}/rate`, { rating, review }),
+    api.post(`/complaints/${id}/rate`, { rating, review }),  
 };
 
-// ── Messages ──────────────────────────────────────────────────────────────────
+// ── Messages ──
 export const messagesApi = {
   list: (complaintId: string) =>
-    api.get(`/api/messages/${complaintId}`),
+    api.get(`/messages/${complaintId}`),       
   send: (complaintId: string, message: string) =>
-    api.post(`/api/messages/${complaintId}`, { message }),
+    api.post(`/messages/${complaintId}`, { message }),
 };
 
-// ── Officers ──────────────────────────────────────────────────────────────────
+// ── Officers ──
 export const officersApi = {
-  list: () => api.get('/api/officers'),
-  get: (id: string) => api.get(`/api/officers/${id}`),
+  list: () => api.get('/officers'),             
+  get: (id: string) => api.get(`/officers/${id}`),  
 };
 
-// ── Ministries ────────────────────────────────────────────────────────────────
+// ── Ministries ──
 export const ministriesApi = {
-  list: () => api.get('/api/ministries'),
-  get: (id: string) => api.get(`/api/ministries/${id}`),
+  list: () => api.get('/ministries'),          
+  get: (id: string) => api.get(`/ministries/${id}`), 
 };
