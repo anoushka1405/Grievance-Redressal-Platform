@@ -127,7 +127,7 @@ export default function TrackComplaint() {
               {complaint.officer_rating && (
                 <div className="flex items-center gap-1 mt-0.5">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-400" />
-                  <span className="text-xs text-gray-600">{complaint.officer_rating.toFixed(1)} · {complaint.officer_total_resolved} resolved</span>
+                  <span className="text-xs text-gray-600">{Number(complaint.officer_rating || 0).toFixed(1)} · {complaint.officer_total_resolved} resolved</span>
                 </div>
               )}
             </div>
