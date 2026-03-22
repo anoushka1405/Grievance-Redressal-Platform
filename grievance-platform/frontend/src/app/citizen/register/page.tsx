@@ -11,6 +11,22 @@ import { CheckCircle2, Search, Upload, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const cityList = [
+  "Delhi, Delhi",
+  "Mumbai, Maharashtra",
+  "Pune, Maharashtra",
+  "Bangalore, Karnataka",
+  "Hyderabad, Telangana",
+  "Chennai, Tamil Nadu",
+  "Kolkata, West Bengal",
+  "Ahmedabad, Gujarat",
+  "Jaipur, Rajasthan",
+  "Lucknow, Uttar Pradesh",
+  "Bhopal, Madhya Pradesh",
+  "Chandigarh, Chandigarh",
+  "Other"
+];
+
 export default function RegisterGrievance() {
   const router = useRouter();
   const { user } = useAuth();
@@ -22,6 +38,9 @@ export default function RegisterGrievance() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isOther, setIsOther] = useState(false);
   const [urgency, setUrgency] = useState<'low' | 'medium' | 'high'>('medium');
   const [documents, setDocuments] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -149,8 +168,58 @@ const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
-                  <input className="input" placeholder="City, State" value={location} onChange={e => setLocation(e.target.value)} />
+                  <div className="relative">
+  <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+
+  <input
+    className="input"
+    placeholder="Search city..."
+    value={locationQuery}
+    onChange={(e) => {
+      setLocationQuery(e.target.value);
+      setShowDropdown(true);
+    }}
+    onFocus={() => setShowDropdown(true)}
+  />
+
+  {showDropdown && (
+    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 max-h-48 overflow-y-auto shadow">
+      {cityList
+        .filter(city =>
+          city.toLowerCase().includes(locationQuery.toLowerCase())
+        )
+        .map((city, i) => (
+          <div
+            key={i}
+            onClick={() => {
+              if (city === "Other") {
+                setIsOther(true);
+                setLocation('');
+                setLocationQuery('');
+              } else {
+                setIsOther(false);
+                setLocation(city);
+                setLocationQuery(city);
+              }
+              setShowDropdown(false);
+            }}
+            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+          >
+            {city}
+          </div>
+        ))}
+    </div>
+  )}
+
+  {isOther && (
+    <input
+      className="input mt-2"
+      placeholder="Enter your city"
+      value={location}
+      onChange={(e) => setLocation(e.target.value)}
+    />
+  )}
+</div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Urgency Level *</label>
