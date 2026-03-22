@@ -72,7 +72,8 @@ const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
     setLoading(true);
     try {
       const fd = new FormData();
-      fd.append('ministryId', selectedMinistry);
+      console.log("Selected Ministry:", selectedMinistry);
+      fd.append('ministryId', String(selectedMinistry));
       fd.append('category', category);
       fd.append('description', description);
       fd.append('location', location);
