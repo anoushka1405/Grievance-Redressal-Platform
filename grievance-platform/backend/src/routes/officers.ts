@@ -25,6 +25,30 @@ officerRouter.get('/', async (_req: AuthRequest, res: Response): Promise<void> =
   }
 });
 
+// 🔥 FIXED POSITION — MUST BE ABOVE /:id
+// GET /api/officers/top-performers — leaderboard
+officerRouter.get('/top-performers', async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        u.id, u.name,
+        o.designation, o.photo_url,
+        COALESCE(o.rating, 0) as rating,
+        COALESCE(o.total_resolved, 0) as total_resolved
+      FROM officers o
+      JOIN users u ON u.id = o.id
+      WHERE u.is_active = true
+      ORDER BY o.total_resolved DESC, o.rating DESC
+      LIMIT 5
+    `);
+
+    res.json({ officers: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch top performers' });
+  }
+});
+
 // GET /api/officers/:id — officer profile
 officerRouter.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
