@@ -49,11 +49,25 @@ export default function ComplaintDetail() {
       return complaintsApi.updateStatus(id, fd);
     },
     onSuccess: () => {
-      toast.success('Status updated successfully');
-      setNewStatus(''); setNote(''); setResolutionNotes(''); setProofFile(null);
-      qc.invalidateQueries({ queryKey: ['complaint', id] });
-    },
-    onError: () => toast.error('Failed to update status'),
+  toast.success('Status updated successfully');
+
+  setNewStatus('');
+  setNote('');
+  setResolutionNotes('');
+  setProofFile(null);
+
+  // Refresh THIS page
+  qc.invalidateQueries({ queryKey: ['complaint', id] });
+
+  // 🔥 ADD THESE (IMPORTANT)
+  qc.invalidateQueries({ queryKey: ['complaints'] });
+  qc.invalidateQueries({ queryKey: ['complaints', 'citizen'] });
+  qc.invalidateQueries({ queryKey: ['complaints', 'officer'] });
+},
+    onError: (err: any) => {
+  console.log("FULL ERROR:", err?.response?.data);
+  toast.error(err?.response?.data?.error || 'Failed to update status');
+},
   });
 
   if (isLoading) return <PageLoader />;
@@ -193,8 +207,24 @@ export default function ComplaintDetail() {
                           onChange={e => setProofFile(e.target.files?.[0] || null)} />
                       </div>
                     )}
-                    <button className="btn-primary w-full flex items-center justify-center gap-2"
-                      onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+                    <button
+  className="btn-primary w-full flex items-center justify-center gap-2"
+  onClick={() => {
+    if (!newStatus) {
+      toast.error('Please select a status');
+      return;
+    }
+
+    // 🔴 NEW VALIDATION (IMPORTANT)
+    if (newStatus === 'resolved' && !proofFile) {
+      toast.error('Please upload proof document');
+      return;
+    }
+
+    updateMutation.mutate();
+  }}
+  disabled={updateMutation.isPending}
+>
                       {updateMutation.isPending ? <><Spinner size="sm" /> Updating...</> : 'Confirm Update'}
                     </button>
                   </>
