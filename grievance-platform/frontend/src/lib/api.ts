@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api',
   timeout: 15000,
 });
 
@@ -64,7 +64,8 @@ export const messagesApi = {
 // ── Officers ──
 export const officersApi = {
   list: () => api.get('/officers'),             
-  get: (id: string) => api.get(`/officers/${id}`),  
+  get: (id: string) => api.get(`/officers/${id}`), 
+  topPerformers: () => api.get('/officers/top-performers'),
 };
 
 // ── Ministries ──
