@@ -95,3 +95,10 @@ export interface Message {
   is_read: boolean;
   created_at: string;
 }
+export interface CreatedOfficer {
+  id: string;
+  name: string;
+  email: string;
+  password: string; // plain text, shown once to ministry
+  designation: string;
+}

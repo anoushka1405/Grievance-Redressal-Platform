@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api',
   timeout: 15000,
 });
 
@@ -72,4 +72,18 @@ export const officersApi = {
 export const ministriesApi = {
   list: () => api.get('/ministries'),          
   get: (id: string) => api.get(`/ministries/${id}`), 
+};
+// ── Ministry Dashboard APIs ──
+export const ministryApi = {
+  getComplaints: (ministryId: string, params?: Record<string, string>) =>
+    api.get(`/ministries/${ministryId}/complaints`, { params }),
+
+  assignOfficer: (ministryId: string, complaintId: string, officerId: string) =>
+    api.patch(`/ministries/${ministryId}/complaints/${complaintId}/assign`, { officerId }),
+
+  createOfficer: (data: { name: string; email: string; password: string; phone?: string; designation?: string }) =>
+    api.post('/auth/create-officer', data),
+
+  getOfficers: (ministryId: string) =>
+    api.get(`/ministries/${ministryId}`), // returns officers array inside
 };
