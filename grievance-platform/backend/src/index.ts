@@ -14,8 +14,8 @@ import messageRoutes from './routes/messages';
 import { officerRouter, ministryRouter } from './routes/officers';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-
+const PORT = process.env.PORT || 5001;
+app.use('/api/ministries', ministryRouter);
 // Ensure uploads directory exists
 const uploadDir = process.env.UPLOAD_DIR || 'uploads';
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
