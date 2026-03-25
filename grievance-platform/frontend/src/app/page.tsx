@@ -7,13 +7,6 @@ import { authApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import GovHeader from '@/components/GovHeader';
-import Link from 'next/link';
-
-<Link href="/ministry/signup">
-  <p style={{ color: 'blue', cursor: 'pointer', marginTop: '10px' }}>
-    New Ministry? Sign up here
-  </p>
-</Link>
 
 type Tab = 'citizen' | 'officer' | 'ministry';
 type CitizenMode = 'login' | 'signup';
@@ -166,13 +159,6 @@ export default function LandingPage() {
                 )}
               </button>
             </form>
-            {tab === 'ministry' && (
-              <div className="mt-4 text-center">
-                <Link href="/ministry/signup" className="text-blue-600 hover:underline text-sm">
-                  New Ministry? Sign up here
-                </Link>
-              </div>
-            )}
 
             {/* Demo credentials hint */}
             <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">

@@ -21,6 +21,13 @@ export default function OfficerDashboard() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [urgencyFilter, setUrgencyFilter] = useState('all');
+  useEffect(() => {
+  const handler = () => {
+    window.location.reload(); // simple & safe
+  };
+  window.addEventListener('messageSent', handler);
+  return () => window.removeEventListener('messageSent', handler);
+}, []);
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'officer')) router.push('/');
@@ -122,6 +129,9 @@ export default function OfficerDashboard() {
                   className={`flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group border-l-4 ${urgencyColor(c.urgency)}`}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+  💬 Chat Available
+</span>
                       <span className="font-mono text-xs text-blue-700 font-semibold">{c.id}</span>
                       <StatusBadge status={c.status} />
                       <UrgencyBadge urgency={c.urgency} />

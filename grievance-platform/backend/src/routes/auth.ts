@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import pool from '../db/pool';
 import dotenv from 'dotenv';
-import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
@@ -34,10 +33,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     const data = registerSchema.parse(req.body);
 
     // Check duplicate email
-    const existing = await pool.query(
-      'SELECT id FROM users WHERE email = $1',
-      [data.email]
-    );
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [data.email]);
     if (existing.rows.length > 0) {
       res.status(409).json({ error: 'Email already registered' });
       return;
@@ -45,52 +41,44 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
     const passwordHash = await bcrypt.hash(data.password, 12);
 
-    // ✅ INSERT USER (THIS WAS MISSING)
-    const userRes = await pool.query(
+    const result = await pool.query(
       `INSERT INTO users (name, email, password_hash, phone, role)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, email, role`,
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, created_at`,
       [data.name, data.email, passwordHash, data.phone || null, data.role]
     );
+    const user = result.rows[0];
 
-    const user = userRes.rows[0];
-
-    // Role-specific insert
+    // Create role-specific record
     if (data.role === 'officer' && data.ministryId) {
       await pool.query(
-        `INSERT INTO officers (id, ministry_id, designation)
-         VALUES ($1, $2, $3)`,
+        `INSERT INTO officers (id, ministry_id, designation) VALUES ($1, $2, $3)`,
         [user.id, data.ministryId, data.designation || 'Officer']
       );
-    }
-
-    if (data.role === 'ministry' && data.ministryId) {
+    } else if (data.role === 'ministry' && data.ministryId) {
       await pool.query(
-        `INSERT INTO ministry_users (id, ministry_id)
-         VALUES ($1, $2)`,
+        `INSERT INTO ministry_users (id, ministry_id) VALUES ($1, $2)`,
         [user.id, data.ministryId]
       );
     }
 
-    // Create token
     const token = jwt.sign(
-      {
-        id: user.id,
-        role: user.role,
-        email: user.email,
-        name: user.name
-      },
-      JWT_SECRET,
+  {
+    id: user.id,
+    role: user.role,
+    email: user.email,
+    name: user.name
+  },
+  JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN as any }
     );
 
-    res.status(201).json({ token, user });
-
+    res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: 'Validation failed', details: err.errors });
       return;
     }
+    console.error(err);
     res.status(500).json({ error: 'Registration failed' });
   }
 });
@@ -127,13 +115,13 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = jwt.sign(
-      {
-        id: user.id,
-        role: user.role,
-        email: user.email,
-        name: user.name
-      },
-      JWT_SECRET,
+  {
+    id: user.id,
+    role: user.role,
+    email: user.email,
+    name: user.name
+  },
+  JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN as any }
     );
     res.json({
@@ -182,61 +170,5 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     res.status(401).json({ error: 'Invalid token' });
   }
 });
-// POST /api/auth/create-officer — ministry creates officer with credentials
-router.post('/create-officer', authenticate, requireRole('ministry'), async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const data = z.object({
-      name: z.string().min(2),
-      email: z.string().email(),
-      password: z.string().min(6),
-      phone: z.string().optional(),
-      designation: z.string().optional(),
-    }).parse(req.body);
 
-    // Get ministry_id from the logged-in ministry user
-    const ministryUserRes = await pool.query(
-      `SELECT ministry_id FROM ministry_users WHERE id = $1`,
-      [req.user!.id]
-    );
-    if (!ministryUserRes.rows[0]) {
-      res.status(403).json({ error: 'Ministry not found for this user' }); return;
-    }
-    const ministryId = ministryUserRes.rows[0].ministry_id;
-
-    // Check duplicate email
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [data.email]);
-    if (existing.rows.length > 0) {
-      res.status(409).json({ error: 'Email already registered' }); return;
-    }
-
-    const passwordHash = await bcrypt.hash(data.password, 12);
-
-    const userRes = await pool.query(
-      `INSERT INTO users (name, email, password_hash, phone, role)
-       VALUES ($1, $2, $3, $4, 'officer') RETURNING id, name, email, role`,
-      [data.name, data.email, passwordHash, data.phone || null]
-    );
-    const newUser = userRes.rows[0];
-
-    await pool.query(
-      `INSERT INTO officers (id, ministry_id, designation) VALUES ($1, $2, $3)`,
-      [newUser.id, ministryId, data.designation || 'Officer']
-    );
-
-    res.status(201).json({
-      message: 'Officer account created successfully',
-      officer: {
-        id: newUser.id,
-        name: newUser.name,
-        email: data.email,
-        password: data.password, // send back plain password so ministry can share it
-        designation: data.designation || 'Officer',
-      }
-    });
-  } catch (err) {
-    if (err instanceof z.ZodError) { res.status(400).json({ error: 'Validation failed', details: err.errors }); return; }
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create officer' });
-  }
-});
 export default router;

@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import pool from '../db/pool';
-import { authenticate,requireRole, AuthRequest } from '../middleware/auth';
-import { z } from 'zod';
+import { authenticate, AuthRequest } from '../middleware/auth';
+
 const officerRouter = Router();
 officerRouter.use(authenticate);
 
@@ -42,7 +42,25 @@ officerRouter.get('/top-performers', async (_req: AuthRequest, res: Response): P
       LIMIT 5
     `);
 
-    res.json({ officers: result.rows });
+    const officers = result.rows;
+
+    // 🔥 ADD REVIEWS FOR EACH OFFICER
+    for (let officer of officers) {
+      const reviewsRes = await pool.query(
+        `SELECT r.rating, r.review, u.name as citizen_name
+         FROM officer_ratings r
+         JOIN users u ON u.id = r.citizen_id
+         WHERE r.officer_id = $1
+         ORDER BY r.created_at DESC
+         LIMIT 5`,
+        [officer.id]
+      );
+
+      officer.reviews = reviewsRes.rows;
+    }
+
+    res.json({ officers });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch top performers' });
@@ -142,84 +160,5 @@ ministryRouter.get('/:id', async (req, res: Response): Promise<void> => {
     res.status(500).json({ error: 'Failed to fetch ministry' });
   }
 });
-// GET /api/ministries/:id/complaints — ministry sees their complaints
-ministryRouter.get('/:id/complaints', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { status, urgency, page = '1', limit = '20' } = req.query;
-    const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
-    const params: unknown[] = [req.params.id];
-    const conditions: string[] = [`c.ministry_id = $1`];
 
-    if (status && status !== 'all') { params.push(status); conditions.push(`c.status = $${params.length}`); }
-    if (urgency && urgency !== 'all') { params.push(urgency); conditions.push(`c.urgency = $${params.length}`); }
-
-    const where = `WHERE ${conditions.join(' AND ')}`;
-
-    const countRes = await pool.query(
-      `SELECT COUNT(*) FROM complaints c ${where}`, params
-    );
-
-    params.push(parseInt(limit as string), offset);
-    const dataRes = await pool.query(
-      `SELECT c.id, c.category, c.description, c.location, c.urgency, c.status,
-              c.submitted_at, c.updated_at,
-              cu.name as citizen_name, cu.email as citizen_email,
-              ou.name as officer_name, o.designation as officer_designation
-       FROM complaints c
-       JOIN users cu ON cu.id = c.citizen_id
-       LEFT JOIN users ou ON ou.id = c.assigned_officer_id
-       LEFT JOIN officers o ON o.id = c.assigned_officer_id
-       ${where}
-       ORDER BY c.submitted_at ASC
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params
-    );
-
-    res.json({
-      complaints: dataRes.rows,
-      total: parseInt(countRes.rows[0].count),
-      page: parseInt(page as string),
-      pages: Math.ceil(parseInt(countRes.rows[0].count) / parseInt(limit as string)),
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch ministry complaints' });
-  }
-});
-
-// PATCH /api/ministries/:id/complaints/:complaintId/assign — ministry assigns officer
-ministryRouter.patch('/:id/complaints/:complaintId/assign', authenticate, requireRole('ministry'), async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { officerId } = z.object({ officerId: z.string().uuid() }).parse(req.body);
-
-    const officerRes = await pool.query(
-      `SELECT u.name FROM users u JOIN officers o ON o.id = u.id
-       WHERE u.id = $1 AND o.ministry_id = $2`,
-      [officerId, req.params.id]
-    );
-    if (!officerRes.rows[0]) { res.status(404).json({ error: 'Officer not found in this ministry' }); return; }
-
-    const complaintRes = await pool.query(`SELECT status FROM complaints WHERE id = $1`, [req.params.complaintId]);
-    if (!complaintRes.rows[0]) { res.status(404).json({ error: 'Complaint not found' }); return; }
-    const oldStatus = complaintRes.rows[0].status;
-
-    await pool.query(
-      `UPDATE complaints SET assigned_officer_id = $1, status = 'assigned', assigned_at = NOW(), updated_at = NOW()
-       WHERE id = $2`,
-      [officerId, req.params.complaintId]
-    );
-
-    await pool.query(
-      `INSERT INTO complaint_history (complaint_id, changed_by, changed_by_name, old_status, new_status, note)
-       VALUES ($1, $2, $3, $4, 'assigned', $5)`,
-      [req.params.complaintId, req.user!.id, req.user!.name, oldStatus, `Assigned to ${officerRes.rows[0].name}`]
-    );
-
-    res.json({ success: true, assignedTo: officerRes.rows[0].name });
-  } catch (err) {
-    if (err instanceof z.ZodError) { res.status(400).json({ error: 'Validation failed', details: err.errors }); return; }
-    console.error(err);
-    res.status(500).json({ error: 'Failed to assign officer' });
-  }
-});
 export { officerRouter, ministryRouter };

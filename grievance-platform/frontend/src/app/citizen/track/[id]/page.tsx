@@ -37,6 +37,9 @@ export default function TrackComplaint() {
     setRatingLoading(true);
     try {
       await complaintsApi.rate(id, rating, review);
+
+// 🔥 ADD THIS LINE (VERY IMPORTANT)
+window.dispatchEvent(new Event('ratingSubmitted'));
       toast.success('Rating submitted!');
       refetch();
     } catch { toast.error('Failed to submit rating'); }
