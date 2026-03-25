@@ -187,7 +187,7 @@ export default function MinistryRegistry() {
                               {ministryOfficers.map(o => (
                                 <div
                                   key={o.id}
-                                  onClick={() => router.push(`/officer/${o.id}`)}
+                                  onClick={() => router.push(`/officer/chat/${o.id}`)}
                                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
                                 >
                                   {o.photo_url ? (

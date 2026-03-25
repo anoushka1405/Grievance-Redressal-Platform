@@ -39,25 +39,25 @@ export const authApi = {
 // ── Complaints ──
 export const complaintsApi = {
   list: (params?: Record<string, string>) =>
-    api.get('/complaints', { params }),        
+    api.get('/complaints', { params }),
   get: (id: string) =>
-    api.get(`/complaints/${id}`),               
+    api.get(`/complaints/${id}`),
   create: (formData: FormData) =>
-    api.post('/complaints', formData, {        
+    api.post('/complaints', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   updateStatus: (id: string, formData: FormData) =>
-    api.patch(`/complaints/${id}/status`, formData, {  
+    api.patch(`/complaints/${id}/status`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   rate: (id: string, rating: number, review?: string) =>
-    api.post(`/complaints/${id}/rate`, { rating, review }),  
+    api.post(`/complaints/${id}/rate`, { rating, review }),
 };
 
 // ── Messages ──
 export const messagesApi = {
   list: (complaintId: string) =>
-    api.get(`/messages/${complaintId}`),       
+    api.get(`/messages/${complaintId}`),
   send: (complaintId: string, message: string) =>
     api.post(`/messages/${complaintId}`, { message }),
 };
@@ -90,10 +90,12 @@ export const ministryApi = {
 
   assignOfficer: (ministryId: string, complaintId: string, officerId: string) =>
     api.patch(`/ministries/${ministryId}/complaints/${complaintId}/assign`, { officerId }),
-
+  
   createOfficer: (data: { name: string; email: string; password: string; designation: string; ministry_id: string }) =>
-    api.post('/auth/create-officer', data),
+    api.post('/officers', data),
 
   getOfficers: (ministryId: string) =>
-    api.get(`/ministries/${ministryId}`),
+    api.get(`/ministries/${ministryId}/officers`),
+  deleteOfficer: (id: string) => 
+    api.delete(`/officers/${id}`)
 };
