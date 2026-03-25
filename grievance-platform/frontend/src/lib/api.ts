@@ -64,9 +64,11 @@ export const messagesApi = {
 
 // ── Officers ──
 export const officersApi = {
-  list: () => api.get('/officers'),             
-  get: (id: string) => api.get(`/officers/${id}`), 
-  topPerformers: () => api.get('/officers/top-performers'),
+  list: () => api.get('/officers'),
+
+  getById: (id: string) => api.get(`/officers/${id}`),
+
+  topPerformers: () => api.get('/officers/top'),
 };
 
 // ── Ministries (Public List) ──

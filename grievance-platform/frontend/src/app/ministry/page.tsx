@@ -79,6 +79,7 @@ export default function MinistryRegistry() {
               </button>
             </div>
 
+
             {showAdd && (
               <div className="flex gap-2">
                 <input
@@ -184,7 +185,11 @@ export default function MinistryRegistry() {
                           ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {ministryOfficers.map(o => (
-                                <div key={o.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <div
+                                  key={o.id}
+                                  onClick={() => router.push(`/officer/${o.id}`)}
+                                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                                >
                                   {o.photo_url ? (
                                     <img src={o.photo_url} alt={o.name} className="w-10 h-10 rounded-full object-cover" />
                                   ) : (

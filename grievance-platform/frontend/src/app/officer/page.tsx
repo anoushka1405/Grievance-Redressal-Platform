@@ -22,12 +22,12 @@ export default function OfficerDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [urgencyFilter, setUrgencyFilter] = useState('all');
   useEffect(() => {
-  const handler = () => {
-    window.location.reload(); // simple & safe
-  };
-  window.addEventListener('messageSent', handler);
-  return () => window.removeEventListener('messageSent', handler);
-}, []);
+    const handler = () => {
+      window.location.reload(); // simple & safe
+    };
+    window.addEventListener('messageSent', handler);
+    return () => window.removeEventListener('messageSent', handler);
+  }, []);
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'officer')) router.push('/');
@@ -44,9 +44,9 @@ export default function OfficerDashboard() {
   });
 
   const { data: topData } = useQuery({
-  queryKey: ['top-officers'],
-  queryFn: () => officersApi.topPerformers(),
-});
+    queryKey: ['top-officers'],
+    queryFn: () => officersApi.topPerformers(),
+  });
 
   if (authLoading || !user) return <PageLoader />;
 
@@ -130,8 +130,8 @@ export default function OfficerDashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-  💬 Chat Available
-</span>
+                        💬 Chat Available
+                      </span>
                       <span className="font-mono text-xs text-blue-700 font-semibold">{c.id}</span>
                       <StatusBadge status={c.status} />
                       <UrgencyBadge urgency={c.urgency} />
@@ -153,84 +153,83 @@ export default function OfficerDashboard() {
           )}
         </div>
         {/* 🔥 Top Performers Footer */}
-<div className="mt-10">
-  <h3 className="font-semibold text-gray-800 mb-3">🏆 Top Performing Officers (This Week)</h3>
+        <div className="mt-10">
+          <h3 className="font-semibold text-gray-800 mb-3">🏆 Top Performing Officers (This Week)</h3>
 
-  <div className="flex gap-4 overflow-x-auto pb-2">
-    {(topData?.data?.officers || []).map((o: any, i: number) => (
-      <div
-  key={o.id}
-  onClick={() => setSelectedOfficer(o)}
-  className="min-w-[220px] card p-4 flex-shrink-0 text-center hover:scale-105 transition-transform"
->
-        <div className={`text-lg font-bold ${
-  i === 0 ? 'text-yellow-500' :
-  i === 1 ? 'text-gray-400' :
-  i === 2 ? 'text-orange-500' :
-  'text-blue-700'
-}`}>
-          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
-        </div>
-        <div className="mt-2 font-semibold text-gray-800">
-  {o.name}
-  {i === 0 && <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Top Performer</span>}
-</div>
-        <div className="text-xs text-gray-500">{o.designation}</div>
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {(topData?.data?.officers || []).map((o: any, i: number) => (
+              <div
+                key={o.id}
+                onClick={() => setSelectedOfficer(o)}
+                className="min-w-[220px] card p-4 flex-shrink-0 text-center hover:scale-105 transition-transform"
+              >
+                <div className={`text-lg font-bold ${i === 0 ? 'text-yellow-500' :
+                    i === 1 ? 'text-gray-400' :
+                      i === 2 ? 'text-orange-500' :
+                        'text-blue-700'
+                  }`}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                </div>
+                <div className="mt-2 font-semibold text-gray-800">
+                  {o.name}
+                  {i === 0 && <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Top Performer</span>}
+                </div>
+                <div className="text-xs text-gray-500">{o.designation}</div>
 
-        <div className="flex justify-center items-center gap-1 mt-2">
-          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-          <span className="text-sm">{parseFloat(o.rating).toFixed(1)}</span>
-        </div>
+                <div className="flex justify-center items-center gap-1 mt-2">
+                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                  <span className="text-sm">{parseFloat(o.rating).toFixed(1)}</span>
+                </div>
 
-        <div className="text-xs text-gray-500 mt-1">
-          {o.total_resolved || 0} total resolved
+                <div className="text-xs text-gray-500 mt-1">
+                  {o.total_resolved || 0} total resolved
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    ))}
-  </div>
-</div>
       </main>
       {selectedOfficer && (
-  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg relative">
 
-      {/* Close Button */}
-      <button
-        onClick={() => setSelectedOfficer(null)}
-        className="absolute top-2 right-3 text-gray-500 text-lg"
-      >
-        ✕
-      </button>
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedOfficer(null)}
+              className="absolute top-2 right-3 text-gray-500 text-lg"
+            >
+              ✕
+            </button>
 
-      {/* Officer Info */}
-      <div className="text-center mb-4">
-        <h2 className="text-lg font-bold text-gray-800">{selectedOfficer.name}</h2>
-        <p className="text-sm text-gray-500">{selectedOfficer.designation}</p>
+            {/* Officer Info */}
+            <div className="text-center mb-4">
+              <h2 className="text-lg font-bold text-gray-800">{selectedOfficer.name}</h2>
+              <p className="text-sm text-gray-500">{selectedOfficer.designation}</p>
 
-        <div className="flex justify-center items-center gap-1 mt-2">
-          ⭐ <span>{parseFloat(selectedOfficer.rating).toFixed(1)}</span>
-        </div>
-      </div>
-
-      {/* Reviews */}
-      <div className="space-y-3 max-h-60 overflow-y-auto">
-        {(selectedOfficer.reviews?.length ? selectedOfficer.reviews : [
-          { rating: 5, review: "Very helpful and quick response!", citizen_name: "User A" },
-          { rating: 4, review: "Resolved my issue smoothly.", citizen_name: "User B" },
-        ]).map((r: any, i: number) => (
-          <div key={i} className="border-b pb-2 text-sm">
-            <div className="flex justify-between">
-              <span className="font-medium">{r.citizen_name}</span>
-              <span>⭐ {r.rating}</span>
+              <div className="flex justify-center items-center gap-1 mt-2">
+                ⭐ <span>{parseFloat(selectedOfficer.rating).toFixed(1)}</span>
+              </div>
             </div>
-            {r.review && <p className="text-gray-600">{r.review}</p>}
-          </div>
-        ))}
-      </div>
 
-    </div>
-  </div>
-)}
+            {/* Reviews */}
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {(selectedOfficer.reviews?.length ? selectedOfficer.reviews : [
+                { rating: 5, review: "Very helpful and quick response!", citizen_name: "User A" },
+                { rating: 4, review: "Resolved my issue smoothly.", citizen_name: "User B" },
+              ]).map((r: any, i: number) => (
+                <div key={i} className="border-b pb-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">{r.citizen_name}</span>
+                    <span>⭐ {r.rating}</span>
+                  </div>
+                  {r.review && <p className="text-gray-600">{r.review}</p>}
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
