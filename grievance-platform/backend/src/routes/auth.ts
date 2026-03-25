@@ -26,7 +26,6 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
 });
-
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {

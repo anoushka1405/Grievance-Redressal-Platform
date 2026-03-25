@@ -6,6 +6,15 @@ const seed = async () => {
   try {
     await client.query('BEGIN');
 
+    // ── Ministry Users (LOGIN ACCOUNTS) ─────────────────────────────
+    const ministryPassword = await bcrypt.hash('ministry123', 10);
+
+    await client.query(
+      `INSERT INTO users (name, email, password_hash, role)
+   VALUES ($1, $2, $3, 'ministry') RETURNING id`,
+      ['Ministry Admin', 'ministry@gov.in', ministryPassword]
+    );
+
     // ── Ministries ──────────────────────────────────────────────────────────
     const ministries = [
       {
@@ -277,5 +286,8 @@ const seed = async () => {
     await pool.end();
   }
 };
-
+console.log('\n🔑 Test credentials:');
+console.log('  Citizen:  arjun.mehta@email.com / citizen123');
+console.log('  Officer:  rajesh.kumar@gov.in  / officer123');
+console.log('  Ministry: ministry@gov.in / ministry123');
 seed().catch(console.error);

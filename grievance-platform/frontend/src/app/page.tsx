@@ -162,7 +162,10 @@ export default function LandingPage() {
 
             {/* Demo credentials hint */}
             <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
-              <strong>Demo:</strong> arjun.mehta@email.com / citizen123 &nbsp;|&nbsp; rajesh.kumar@gov.in / officer123
+              <strong>Demo:</strong>
+              arjun.mehta@email.com / citizen123 &nbsp;|&nbsp;
+              rajesh.kumar@gov.in / officer123 &nbsp;|&nbsp;
+              ministry@gov.in / ministry123
             </div>
           </div>
         </motion.div>
