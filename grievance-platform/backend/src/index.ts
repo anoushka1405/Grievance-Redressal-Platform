@@ -7,7 +7,6 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 
 dotenv.config();
-
 import authRoutes from './routes/auth';
 import complaintRoutes from './routes/complaints';
 import messageRoutes from './routes/messages';
@@ -15,7 +14,6 @@ import { officerRouter, ministryRouter } from './routes/officers';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-
 // Ensure uploads directory exists
 const uploadDir = process.env.UPLOAD_DIR || 'uploads';
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });

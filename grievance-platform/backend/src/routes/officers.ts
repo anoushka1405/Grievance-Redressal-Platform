@@ -108,7 +108,43 @@ officerRouter.get('/:id', async (req: AuthRequest, res: Response): Promise<void>
     res.status(500).json({ error: 'Failed to fetch officer' });
   }
 });
+officerRouter.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { name, email, password, ministry_id, designation } = req.body;
 
+    // 1. Create user
+    const userRes = await pool.query(
+      `INSERT INTO users (name, email, password, role)
+       VALUES ($1, $2, $3, 'officer')
+       RETURNING id`,
+      [name, email, password]
+    );
+
+    const userId = userRes.rows[0].id;
+
+    // 2. Create officer
+    await pool.query(
+      `INSERT INTO officers (id, ministry_id, designation)
+       VALUES ($1, $2, $3)`,
+      [userId, ministry_id, designation]
+    );
+
+    res.status(201).json({ message: 'Officer created' });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create officer' });
+  }
+});
+// DELETE /api/officers/:id
+officerRouter.delete('/:id', authenticate, async (req, res) => {
+  try {
+    await pool.query(`UPDATE users SET is_active = false WHERE id = $1`, [req.params.id]);
+    res.json({ message: 'Officer removed' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to remove officer' });
+  }
+});
 // Ministry router
 const ministryRouter = Router();
 
@@ -160,5 +196,57 @@ ministryRouter.get('/:id', async (req, res: Response): Promise<void> => {
     res.status(500).json({ error: 'Failed to fetch ministry' });
   }
 });
+// GET /api/ministries/:id/officers
+ministryRouter.get('/:id/officers', async (req, res: Response): Promise<void> => {
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.name, u.email, o.designation, o.rating, o.total_resolved
+       FROM users u
+       JOIN officers o ON u.id = o.id
+       WHERE o.ministry_id = $1 AND u.is_active = true`,
+      [req.params.id]
+    );
 
+    res.json({ officers: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch officers' });
+  }
+});
+// POST /api/ministries — create ministry
+ministryRouter.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { name, jurisdiction, categories, contact, escalation_level } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO ministries (name, jurisdiction, categories, contact, escalation_level, is_active)
+       VALUES ($1, $2, $3, $4, $5, true)
+       RETURNING *`,
+      [name, jurisdiction, categories, contact, escalation_level]
+    );
+
+    res.status(201).json({ ministry: result.rows[0] });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create ministry' });
+  }
+});
+// POST /api/ministries — create new ministry
+ministryRouter.post('/', async (req, res: Response): Promise<void> => {
+  try {
+    const { name, jurisdiction, categories, contact, escalation_level } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO ministries (name, jurisdiction, categories, contact, escalation_level, is_active)
+       VALUES ($1, $2, $3, $4, $5, true)
+       RETURNING *`,
+      [name, jurisdiction, categories || [], contact || '', escalation_level || 1]
+    );
+
+    res.json({ ministry: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create ministry' });
+  }
+});
 export { officerRouter, ministryRouter };

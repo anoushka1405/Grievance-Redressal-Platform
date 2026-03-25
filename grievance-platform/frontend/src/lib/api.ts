@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api',
   timeout: 15000,
@@ -68,8 +69,29 @@ export const officersApi = {
   topPerformers: () => api.get('/officers/top-performers'),
 };
 
-// ── Ministries ──
+// ── Ministries (Public List) ──
 export const ministriesApi = {
-  list: () => api.get('/ministries'),          
-  get: (id: string) => api.get(`/ministries/${id}`), 
+  list: () => api.get('/ministries'),
+
+  create: (data: {
+    name: string;
+    jurisdiction: string;
+    categories: string[];
+    contact: string;
+    escalation_level: number;
+  }) => api.post('/ministries', data),
+};
+// ── Ministry Dashboard & Management (Internal) ──
+export const ministryApi = {
+  getComplaints: (ministryId: string, params?: Record<string, string>) =>
+    api.get(`/ministries/${ministryId}/complaints`, { params }),
+
+  assignOfficer: (ministryId: string, complaintId: string, officerId: string) =>
+    api.patch(`/ministries/${ministryId}/complaints/${complaintId}/assign`, { officerId }),
+
+  createOfficer: (data: { name: string; email: string; password: string; designation: string; ministry_id: string }) =>
+    api.post('/auth/create-officer', data),
+
+  getOfficers: (ministryId: string) =>
+    api.get(`/ministries/${ministryId}`),
 };

@@ -9,13 +9,16 @@ import { PageLoader, EmptyState } from '@/components/ui';
 import { Ministry, Officer } from '@/lib/types';
 import { Search, Building2, Phone, Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function MinistryRegistry() {
+  const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
-
+  const [newName, setNewName] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
   useEffect(() => {
     if (!authLoading && !user) router.push('/');
   }, [user, authLoading, router]);
@@ -37,7 +40,7 @@ export default function MinistryRegistry() {
 
   const filtered = ministries.filter(m =>
     m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.categories.some(c => c.toLowerCase().includes(search.toLowerCase()))
+    (m.categories || []).some(c => c.toLowerCase().includes(search.toLowerCase()))
   );
 
   const getOfficers = (ministryId: string) =>
@@ -64,6 +67,50 @@ export default function MinistryRegistry() {
           <input className="input pl-9 bg-white shadow-sm" placeholder="Search by ministry name or category..."
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        {user?.role === 'ministry' && (
+          <div className="card p-4 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-800">Add Ministry</h3>
+              <button
+                onClick={() => setShowAdd(!showAdd)}
+                className="text-blue-600 text-sm"
+              >
+                {showAdd ? 'Cancel' : 'Add New'}
+              </button>
+            </div>
+
+            {showAdd && (
+              <div className="flex gap-2">
+                <input
+                  className="input"
+                  placeholder="Ministry Name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+
+                <button
+                  className="btn-primary"
+                  disabled={!newName.trim()}
+                  onClick={async () => {
+                    await ministriesApi.create({
+                      name: newName,
+                      jurisdiction: 'National',
+                      categories: [],
+                      contact: '',
+                      escalation_level: 1,
+                    });
+
+                    setNewName('');
+                    setShowAdd(false);
+                    queryClient.invalidateQueries({ queryKey: ['ministries'] });// simple refresh
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {isLoading ? (
           <PageLoader />
@@ -94,14 +141,33 @@ export default function MinistryRegistry() {
                           <span>{m.jurisdiction}</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                          {m.categories.map(c => (
+                          {(m.categories || []).map(c => (
                             <span key={c} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{c}</span>
                           ))}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-xs text-gray-400">{ministryOfficers.length} officers</span>
-                        {isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                        {user?.role === 'ministry' && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/ministry/officers?ministryId=${m.id}`);
+                            }}
+                            className="text-xs text-blue-600 hover:underline cursor-pointer"
+                          >
+                            Manage
+                          </span>
+                        )}
+
+                        <span className="text-xs text-gray-400">
+                          {ministryOfficers.length} officers
+                        </span>
+
+                        {isOpen ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
                       </div>
                     </div>
                   </button>
