@@ -18,7 +18,13 @@ export default function MinistryRegistry() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [newName, setNewName] = useState('');
+  const [newMinistry, setNewMinistry] = useState({
+  name: '',
+  contact: '',
+  jurisdiction: 'National',
+  categories: '',
+  escalation_level: 1,
+});
   const [showAdd, setShowAdd] = useState(false);
   useEffect(() => {
     if (!authLoading && !user) router.push('/');
@@ -95,35 +101,70 @@ export default function MinistryRegistry() {
 
 
             {showAdd && (
-              <div className="flex gap-2">
-                <input
-                  className="input"
-                  placeholder="Ministry Name"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
+  <div className="space-y-3">
+    <input
+      className="input"
+      placeholder="Ministry Name"
+      value={newMinistry.name}
+      onChange={(e) => setNewMinistry({ ...newMinistry, name: e.target.value })}
+    />
 
-                <button
-                  className="btn-primary"
-                  disabled={!newName.trim()}
-                  onClick={async () => {
-                    await ministriesApi.create({
-                      name: newName,
-                      jurisdiction: 'National',
-                      categories: [],
-                      contact: '',
-                      escalation_level: 1,
-                    });
+    <input
+      className="input"
+      placeholder="Contact Number"
+      value={newMinistry.contact}
+      onChange={(e) => setNewMinistry({ ...newMinistry, contact: e.target.value })}
+    />
 
-                    setNewName('');
-                    setShowAdd(false);
-                    queryClient.invalidateQueries({ queryKey: ['ministries'] });// simple refresh
-                  }}
-                >
-                  Save
-                </button>
-              </div>
-            )}
+    <input
+      className="input"
+      placeholder="Jurisdiction (e.g. National)"
+      value={newMinistry.jurisdiction}
+      onChange={(e) => setNewMinistry({ ...newMinistry, jurisdiction: e.target.value })}
+    />
+
+    <input
+      className="input"
+      placeholder="Categories (comma separated)"
+      value={newMinistry.categories}
+      onChange={(e) => setNewMinistry({ ...newMinistry, categories: e.target.value })}
+    />
+
+    <select
+      className="input"
+      value={newMinistry.escalation_level}
+      onChange={(e) => setNewMinistry({ ...newMinistry, escalation_level: Number(e.target.value) })}
+    >
+      <option value={1}>Ministry Level</option>
+      <option value={2}>Department Level</option>
+      <option value={3}>Commission Level</option>
+    </select>
+
+    <button
+      className="btn-primary w-full"
+      disabled={!newMinistry.name.trim()}
+      onClick={async () => {
+        await ministriesApi.create({
+          ...newMinistry,
+          categories: newMinistry.categories.split(',').map(c => c.trim())
+        });
+
+        setNewMinistry({
+          name: '',
+          contact: '',
+          jurisdiction: 'National',
+          categories: '',
+          escalation_level: 1,
+        });
+
+        setShowAdd(false);
+        queryClient.invalidateQueries({ queryKey: ['ministries'] });
+      }}
+    >
+      Save Ministry
+    </button>
+  </div>
+)}
           </div>
         )}
 

@@ -175,12 +175,13 @@ router.post('/', upload.array('documents', 5), async (req: AuthRequest, res: Res
 
     // Find officer for this ministry (round-robin could be implemented here)
     const officerRes = await pool.query(
-      `SELECT u.id, u.name FROM officers o
-       JOIN users u ON u.id = o.id
-       WHERE o.ministry_id = $1 AND u.is_active = true
-       ORDER BY o.total_resolved ASC LIMIT 1`,
-      [data.ministryId]
-    );
+  `SELECT u.id, u.name FROM officers o
+   JOIN users u ON u.id = o.id
+   WHERE o.ministry_id = $1 AND u.is_active = true
+   ORDER BY RANDOM()
+   LIMIT 1`,
+  [data.ministryId]
+);
     const assignedOfficer = officerRes.rows[0] || null;
 
     const status = assignedOfficer ? 'assigned' : 'submitted';
