@@ -91,7 +91,7 @@ export const ministryApi = {
   assignOfficer: (ministryId: string, complaintId: string, officerId: string) =>
     api.patch(`/ministries/${ministryId}/complaints/${complaintId}/assign`, { officerId }),
   
-  createOfficer: (data: { name: string; email: string; password: string; designation: string; ministry_id: string }) =>
+  createOfficer: (data: { name: string; email: string; designation: string; phone?: string; ministry_id: string }) =>
     api.post('/officers', data),
 
   getOfficers: (ministryId: string) =>

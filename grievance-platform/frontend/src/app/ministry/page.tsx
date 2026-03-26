@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function MinistryRegistry() {
+  const [managingId, setManagingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -48,7 +49,20 @@ export default function MinistryRegistry() {
 
   const escalationLabel = (n: number) =>
     n === 1 ? 'Ministry Level' : n === 2 ? 'Department Level' : 'Commission Level';
-
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to deactivate this officer?")) return;
+    try {
+      // Note: Make sure process.env.NEXT_PUBLIC_API_URL is set in your .env
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/officers/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      // Refreshes the list immediately
+      queryClient.invalidateQueries({ queryKey: ['officers'] });
+    } catch (err) {
+      alert("Failed to remove officer");
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <GovHeader title="Ministry Registry" subtitle="Central Government Directory" />
@@ -125,8 +139,10 @@ export default function MinistryRegistry() {
               return (
                 <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="card overflow-hidden">
-                  <button className="w-full text-left p-5 hover:bg-gray-50 transition-colors"
-                    onClick={() => setExpanded(isOpen ? null : m.id)}>
+                  <div
+                    className="w-full text-left p-5 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => setExpanded(isOpen ? null : m.id)}
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -149,15 +165,17 @@ export default function MinistryRegistry() {
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {user?.role === 'ministry' && (
-                          <span
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(`/ministry/officers?ministryId=${m.id}`);
+                              setExpanded(m.id); // Ensure it's open
+                              setManagingId(managingId === m.id ? null : m.id); // Toggle management mode
                             }}
-                            className="text-xs text-blue-600 hover:underline cursor-pointer"
+                            className={`text-xs px-2 py-1 rounded font-bold transition-colors ${managingId === m.id ? 'bg-gray-800 text-white' : 'text-blue-600 hover:bg-blue-50'
+                              }`}
                           >
-                            Manage
-                          </span>
+                            {managingId === m.id ? '← Done' : '⚙ Manage Officers'}
+                          </button>
                         )}
 
                         <span className="text-xs text-gray-400">
@@ -171,43 +189,84 @@ export default function MinistryRegistry() {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
 
                   <AnimatePresence>
                     {isOpen && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-                        className="border-t border-gray-100 overflow-hidden">
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="border-t border-gray-100 overflow-hidden"
+                      >
                         <div className="p-5">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Officers ({ministryOfficers.length})</h4>
-                          {ministryOfficers.length === 0 ? (
-                            <p className="text-sm text-gray-400">No officers listed</p>
-                          ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {ministryOfficers.map(o => (
-                                <div
-                                  key={o.id}
-                                  onClick={() => router.push(`/officer/chat/${o.id}`)}
-                                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                          {managingId === m.id ? (
+                            /* --- THE ADMIN LIST --- */
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+                              <div className="flex justify-between items-center mb-2">
+                                <h4 className="text-sm font-bold text-blue-800 uppercase tracking-tight">Officer Administration</h4>
+                                <button
+                                  onClick={() => router.push(`/ministry/officers?ministryId=${m.id}`)}
+                                  className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded shadow-sm"
                                 >
-                                  {o.photo_url ? (
-                                    <img src={o.photo_url} alt={o.name} className="w-10 h-10 rounded-full object-cover" />
-                                  ) : (
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold">
-                                      {o.name.charAt(0)}
+                                  + Add New
+                                </button>
+                              </div>
+
+                              <div className="border rounded-lg bg-white divide-y shadow-sm">
+                                {ministryOfficers.length === 0 ? (
+                                  <p className="p-4 text-xs text-gray-400 text-center italic">No officers to manage</p>
+                                ) : (
+                                  ministryOfficers.map(o => (
+                                    <div key={o.id} className="p-3 flex justify-between items-center hover:bg-gray-50">
+                                      <div>
+                                        <span className="text-sm font-medium text-gray-700">{o.name}</span>
+                                        <p className="text-[10px] text-gray-400">{o.designation}</p>
+                                      </div>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(o.id); }}
+                                        className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
+                                      >
+                                        Remove
+                                      </button>
                                     </div>
-                                  )}
-                                  <div>
-                                    <div className="text-sm font-medium text-gray-800">{o.name}</div>
-                                    <div className="text-xs text-gray-500">{o.designation}</div>
-                                    <div className="flex items-center gap-1 mt-0.5">
-                                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                      <span className="text-xs text-gray-500">{parseFloat(String(o.rating)).toFixed(1)} · {o.total_resolved} resolved</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
+                                  ))
+                                )}
+                              </div>
                             </div>
+                          ) : (
+                            /* --- THE NORMAL CARDS VIEW --- */
+                            <>
+                              <h4 className="text-sm font-semibold text-gray-700 mb-3">Officers Registry ({ministryOfficers.length})</h4>
+                              {ministryOfficers.length === 0 ? (
+                                <p className="text-sm text-gray-400">No officers listed</p>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {ministryOfficers.map(o => (
+                                    <div
+                                      key={o.id}
+                                      onClick={() => router.push(`/officer/chat/${o.id}`)}
+                                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-all shadow-sm"
+                                    >
+                                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold">
+                                        {o.name.charAt(0)}
+                                      </div>
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-800">{o.name}</div>
+                                        <div className="text-xs text-gray-500">{o.designation}</div>
+                                        <div className="flex items-center gap-1 mt-0.5">
+                                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                          <span className="text-[10px] text-gray-500">
+                                            {parseFloat(String(o.rating || 0)).toFixed(1)} · {o.total_resolved || 0} resolved
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </motion.div>
