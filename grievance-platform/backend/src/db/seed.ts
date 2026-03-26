@@ -9,11 +9,22 @@ const seed = async () => {
     // ── Ministry Users (LOGIN ACCOUNTS) ─────────────────────────────
     const ministryPassword = await bcrypt.hash('ministry123', 10);
 
-    await client.query(
-      `INSERT INTO users (name, email, password_hash, role)
-   VALUES ($1, $2, $3, 'ministry') RETURNING id`,
-      ['Ministry Admin', 'ministry@gov.in', ministryPassword]
-    );
+    let ministryUserRes = await client.query(
+  `INSERT INTO users (name, email, password_hash, role)
+   VALUES ($1, $2, $3, 'ministry')
+   ON CONFLICT (email) DO NOTHING
+   RETURNING id`,
+  ['Ministry Admin', 'ministry@gov.in', ministryPassword]
+);
+
+if (!ministryUserRes.rows[0]) {
+  ministryUserRes = await client.query(
+    `SELECT id FROM users WHERE email = $1`,
+    ['ministry@gov.in']
+  );
+}
+
+const ministryUserId = ministryUserRes.rows[0].id;
 
     // ── Ministries ──────────────────────────────────────────────────────────
     const ministries = [
@@ -63,13 +74,34 @@ const seed = async () => {
 
     const ministryIds: Record<string, string> = {};
     for (const m of ministries) {
-      const res = await client.query(
-        `INSERT INTO ministries (name, jurisdiction, categories, contact, escalation_level)
-         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [m.name, m.jurisdiction, m.categories, m.contact, m.escalation_level]
-      );
-      ministryIds[m.name] = res.rows[0].id;
+      let res = await client.query(
+  `INSERT INTO ministries (name, jurisdiction, categories, contact, escalation_level)
+   VALUES ($1, $2, $3, $4, $5)
+   ON CONFLICT (name) DO NOTHING
+   RETURNING id`,
+  [m.name, m.jurisdiction, m.categories, m.contact, m.escalation_level]
+);
+
+// 🔥 fallback
+if (!res.rows[0]) {
+  res = await client.query(
+    `SELECT id FROM ministries WHERE name = $1`,
+    [m.name]
+  );
+}
+
+ministryIds[m.name] = res.rows[0].id;
     }
+
+    // 🔥 LINK ministry user to FIRST ministry
+const firstMinistryId = Object.values(ministryIds)[0];
+
+await client.query(
+  `INSERT INTO ministry_users (id, ministry_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING`,
+  [ministryUserId, firstMinistryId]
+);
 
     // ── Citizens ────────────────────────────────────────────────────────────
     const citizenPassword = await bcrypt.hash('citizen123', 10);
@@ -80,12 +112,23 @@ const seed = async () => {
       ['Kavita Singh', 'kavita.singh@email.com', '9123456790'],
       ['Rohit Desai', 'rohit.desai@email.com', '9123456791'],
     ]) {
-      const r = await client.query(
-        `INSERT INTO users (name, email, password_hash, phone, role)
-         VALUES ($1, $2, $3, $4, 'citizen') RETURNING id`,
-        [name, email, citizenPassword, phone]
-      );
-      citizens[name] = r.rows[0].id;
+      let r = await client.query(
+  `INSERT INTO users (name, email, password_hash, phone, role)
+   VALUES ($1, $2, $3, $4, 'citizen')
+   ON CONFLICT (email) DO NOTHING
+   RETURNING id`,
+  [name, email, citizenPassword, phone]
+);
+
+// 🔥 If already exists → fetch ID
+if (!r.rows[0]) {
+  r = await client.query(
+    `SELECT id FROM users WHERE email = $1`,
+    [email]
+  );
+}
+
+citizens[name] = r.rows[0].id;
     }
 
     // ── Officers ────────────────────────────────────────────────────────────
@@ -155,22 +198,43 @@ const seed = async () => {
     ];
 
     const officerIds: Record<string, string> = {};
-    for (const o of officerData) {
-      const userRes = await client.query(
-        `INSERT INTO users (name, email, password_hash, phone, role)
-         VALUES ($1, $2, $3, $4, 'officer') RETURNING id`,
-        [o.name, o.email, officerPassword, o.phone]
-      );
-      const userId = userRes.rows[0].id;
-      officerIds[o.name] = userId;
 
-      await client.query(
-        `INSERT INTO officers (id, ministry_id, designation, photo_url, rating, total_resolved)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [userId, ministryIds[o.ministry], o.designation, o.photo_url, o.rating, o.total_resolved]
-      );
-    }
+for (const o of officerData) {
+  // 🔹 Step 1: Insert user safely
+  let userRes = await client.query(
+    `INSERT INTO users (name, email, password_hash, phone, role)
+     VALUES ($1, $2, $3, $4, 'officer')
+     ON CONFLICT (email) DO NOTHING
+     RETURNING id`,
+    [o.name, o.email, officerPassword, o.phone]
+  );
 
+  // 🔹 Step 2: If already exists → fetch ID
+  if (!userRes.rows[0]) {
+    userRes = await client.query(
+      `SELECT id FROM users WHERE email = $1`,
+      [o.email]
+    );
+  }
+
+  const userId = userRes.rows[0].id;
+  officerIds[o.name] = userId;
+
+  // 🔹 Step 3: Insert into officers table safely
+  await client.query(
+    `INSERT INTO officers (id, ministry_id, designation, photo_url, rating, total_resolved)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (id) DO NOTHING`,
+    [
+      userId,
+      ministryIds[o.ministry],
+      o.designation,
+      o.photo_url,
+      o.rating,
+      o.total_resolved,
+    ]
+  );
+}
     // ── Sample Complaints ────────────────────────────────────────────────────
     const complaints = [
       {
@@ -214,7 +278,8 @@ const seed = async () => {
     for (const c of complaints) {
       await client.query(
         `INSERT INTO complaints (id, citizen_id, ministry_id, category, description, location, urgency, status, assigned_officer_id, assigned_at, submitted_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
+         ON CONFLICT (id) DO NOTHING`,
         [
           c.id,
           citizens[c.citizenName],
@@ -285,6 +350,7 @@ const seed = async () => {
     client.release();
     await pool.end();
   }
+  
 };
 console.log('\n🔑 Test credentials:');
 console.log('  Citizen:  arjun.mehta@email.com / citizen123');

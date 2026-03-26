@@ -20,10 +20,13 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
-    }
+  console.log("401 ERROR:", err.response?.data);
+
+  // ❌ TEMP: DO NOT LOGOUT (for debugging)
+  // localStorage.removeItem('token');
+  // localStorage.removeItem('user');
+  // window.location.href = '/';
+}
     return Promise.reject(err);
   }
 );

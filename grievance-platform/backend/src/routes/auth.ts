@@ -89,9 +89,15 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
     const result = await pool.query(
       `SELECT u.id, u.name, u.email, u.password_hash, u.role, u.is_active,
-              o.ministry_id, o.designation, o.photo_url, o.rating, o.total_resolved
+              o.ministry_id as officer_ministry_id,
+m.ministry_id as ministry_ministry_id,
+o.designation,
+o.photo_url,
+o.rating,
+o.total_resolved
        FROM users u
        LEFT JOIN officers o ON o.id = u.id
+LEFT JOIN ministry_users m ON m.id = u.id
        WHERE u.email = $1`,
       [email]
     );
@@ -130,7 +136,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         email: user.email,
         role: user.role,
-        ministryId: user.ministry_id || null,
+        ministryId: user.officer_ministry_id || user.ministry_ministry_id || null,
         designation: user.designation || null,
         photoUrl: user.photo_url || null,
         rating: user.rating || null,
@@ -159,8 +165,15 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     const result = await pool.query(
       `SELECT u.id, u.name, u.email, u.role, u.phone,
-              o.ministry_id, o.designation, o.photo_url, o.rating, o.total_resolved
-       FROM users u LEFT JOIN officers o ON o.id = u.id WHERE u.id = $1`,
+              o.ministry_id as officer_ministry_id,
+m.ministry_id as ministry_ministry_id,
+o.designation,
+o.photo_url,
+o.rating,
+o.total_resolved
+       FROM users u LEFT JOIN officers o ON o.id = u.id
+       LEFT JOIN ministry_users m ON m.id = u.id
+       WHERE u.id = $1`,
       [decoded.id]
     );
     if (!result.rows[0]) { res.status(404).json({ error: 'User not found' }); return; }
