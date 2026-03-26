@@ -10,7 +10,7 @@ export default function OfficerProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading } = useQuery({
     queryKey: ['officer', id],
-    queryFn: () => officersApi.get(id),
+    queryFn: () => officersApi.getById(id),
   });
 
   if (isLoading) return <PageLoader />;
