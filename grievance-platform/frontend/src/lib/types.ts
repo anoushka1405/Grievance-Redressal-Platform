@@ -22,6 +22,7 @@ export interface Ministry {
   categories: string[];
   contact: string;
   escalation_level: number;
+  is_active: boolean;
 }
 
 export interface Officer {

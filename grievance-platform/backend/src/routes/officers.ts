@@ -267,8 +267,9 @@ const ministryRouter = Router();
 ministryRouter.get('/', async (_req, res: Response): Promise<void> => {
   try {
     const result = await pool.query(
-      `SELECT id, name, jurisdiction, categories, contact, escalation_level
-       FROM ministries WHERE is_active = true ORDER BY name ASC`
+      `SELECT id, name, jurisdiction, categories, contact, escalation_level, 
+       COALESCE(is_active, true) as is_active
+FROM ministries ORDER BY name ASC`
     );
     res.json({ ministries: result.rows });
   } catch (err) {
@@ -360,6 +361,24 @@ ministryRouter.post('/', authenticate, async (req: AuthRequest, res: Response): 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create ministry' });
+  }
+});
+
+// PATCH /api/ministries/:id/toggle
+ministryRouter.patch('/:id/toggle', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(
+      `UPDATE ministries 
+       SET is_active = NOT is_active 
+       WHERE id = $1 
+       RETURNING *`,
+      [req.params.id]
+    );
+
+    res.json({ ministry: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to toggle ministry status' });
   }
 });
 

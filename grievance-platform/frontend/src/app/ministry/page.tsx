@@ -194,7 +194,14 @@ export default function MinistryRegistry() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-800">{m.name}</h3>
+                          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+  {m.name}
+  <span className={`text-xs px-2 py-0.5 rounded-full ${
+    m.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+  }`}>
+    {m.is_active ? 'Active' : 'Inactive'}
+  </span>
+</h3>
                           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                             {escalationLabel(m.escalation_level)}
                           </span>
@@ -213,18 +220,47 @@ export default function MinistryRegistry() {
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {user?.role === 'ministry' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpanded(m.id); // Ensure it's open
-                              setManagingId(managingId === m.id ? null : m.id); // Toggle management mode
-                            }}
-                            className={`text-xs px-2 py-1 rounded font-bold transition-colors ${managingId === m.id ? 'bg-gray-800 text-white' : 'text-blue-600 hover:bg-blue-50'
-                              }`}
-                          >
-                            {managingId === m.id ? '← Done' : '⚙ Manage Officers'}
-                          </button>
-                        )}
+    <>
+      {/* Manage Officers Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setExpanded(m.id);
+          setManagingId(managingId === m.id ? null : m.id);
+        }}
+        className={`text-xs px-2 py-1 rounded font-bold transition-colors ${
+          managingId === m.id
+            ? 'bg-gray-800 text-white'
+            : 'text-blue-600 hover:bg-blue-50'
+        }`}
+      >
+        {managingId === m.id ? '← Done' : '⚙ Manage Officers'}
+      </button>
+
+      {/* ✅ ADD THIS TOGGLE BUTTON HERE */}
+      <button
+        onClick={async (e) => {
+          e.stopPropagation();
+
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ministries/${m.id}/toggle`, {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
+
+          queryClient.invalidateQueries({ queryKey: ['ministries'] });
+        }}
+        className={`text-xs px-2 py-1 rounded font-bold ${
+          m.is_active
+            ? 'bg-red-100 text-red-600 hover:bg-red-200'
+            : 'bg-green-100 text-green-600 hover:bg-green-200'
+        }`}
+      >
+        {m.is_active ? 'Deactivate' : 'Activate'}
+      </button>
+    </>
+  )}
 
                         <span className="text-xs text-gray-400">
                           {ministryOfficers.length} officers

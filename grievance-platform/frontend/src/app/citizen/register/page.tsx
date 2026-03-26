@@ -66,6 +66,10 @@ const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
   };
 
   const handleSubmit = async () => {
+    if (selectedM && selectedM.is_active === false) {
+  toast.error('This ministry is inactive');
+  return;
+}
     if (!selectedMinistry || !category || !description.trim() || !location.trim()) {
       toast.error('Please fill all required fields'); return;
     }
@@ -131,10 +135,25 @@ const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
               </div>
               <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                 {filtered.map(m => (
-                  <div key={m.id} onClick={() => setSelectedMinistry(m.id)}
+                  <div
+  key={m.id}
+  onClick={() => {
+  if (m.is_active === false) {
+    toast.error('This ministry is currently inactive');
+    return;
+  }
+  setSelectedMinistry(m.id);
+}}
                     className={`border rounded-lg p-4 cursor-pointer transition-all
                       ${selectedMinistry === m.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
-                    <div className="font-medium text-sm text-gray-800">{m.name}</div>
+                    <div className="font-medium text-sm text-gray-800 flex items-center gap-2">
+  {m.name}
+  <span className={`text-[10px] px-2 py-0.5 rounded ${
+    m.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+  }`}>
+    {m.is_active ? 'Active' : 'Inactive'}
+  </span>
+</div>
                     <div className="text-xs text-gray-500 mt-1">Contact: {m.contact} · Escalation Level {m.escalation_level}</div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {m.categories.slice(0, 4).map((cat: string) => (
@@ -144,7 +163,11 @@ const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
                   </div>
                 ))}
               </div>
-              <button className="btn-primary w-full mt-4" disabled={!selectedMinistry} onClick={() => setStep(2)}>
+              <button
+  className="btn-primary w-full mt-4"
+  disabled={!selectedMinistry}
+  onClick={() => setStep(2)}
+>
                 Continue →
               </button>
             </motion.div>
