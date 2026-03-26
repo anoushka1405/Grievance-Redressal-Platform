@@ -33,6 +33,13 @@ export default function MinistryRegistry() {
     queryKey: ['officers'],
     queryFn: () => officersApi.list(),
   });
+  // Inside MinistryRegistry function, near other useQuery calls
+  const { data: topData } = useQuery({
+    queryKey: ['top-officers'],
+    queryFn: () => officersApi.list(),
+    refetchInterval: 10000, // <--- Add this! (10000ms = 10 seconds)
+    refetchOnWindowFocus: true, // Refetch when you switch back to this tab
+  });
 
   if (authLoading) return <PageLoader />;
 
@@ -276,8 +283,52 @@ export default function MinistryRegistry() {
               );
             })}
           </div>
+          
         )}
+        {/* 🔥 Top Performers Footer */}
+        <div className="mt-10 border-t pt-8">
+          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            🏆 Top Performing Officers (This Week)
+          </h3>
+
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+            {(topData?.data?.officers || []).slice(0, 5).map((o: any, i: number) => (
+              <div
+                key={o.id}
+                onClick={() => router.push(`/officer/chat/${o.id}`)}
+                className="min-w-[220px] bg-white border rounded-xl p-4 flex-shrink-0 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer"
+              >
+                <div className={`text-2xl mb-1 ${i === 0 ? 'text-yellow-500' :
+                  i === 1 ? 'text-gray-400' :
+                    i === 2 ? 'text-orange-400' : 'text-blue-200'
+                  }`}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                </div>
+
+                <div className="mt-1 font-bold text-gray-800 truncate">
+                  {o.name}
+                </div>
+
+                <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">
+                  {o.designation}
+                </div>
+
+                <div className="flex justify-center items-center gap-1.5 bg-gray-50 rounded-full py-1 px-3 w-fit mx-auto mb-2">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                  <span className="text-sm font-bold text-gray-700">
+                    {parseFloat(o.rating || '0').toFixed(1)}
+                  </span>
+                </div>
+
+                <div className="text-[10px] text-green-600 font-medium bg-green-50 rounded px-2 py-0.5 w-fit mx-auto">
+                  {o.total_resolved || 0} resolved
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
     </div>
+
   );
 }
