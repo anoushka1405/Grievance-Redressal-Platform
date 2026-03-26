@@ -43,10 +43,10 @@ export default function GovHeader({ title = 'National Grievance Portal', subtitl
 
         {showUser && user && (
           <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <div className="text-sm font-medium">{user.name}</div>
-              <div className="text-xs opacity-70 capitalize">{user.designation || user.role}</div>
-            </div>
+            <Link href={`/citizen/officer/${user.id}`} className="text-right hidden sm:block hover:underline cursor-pointer">
+  <div className="text-sm font-medium">{user.name}</div>
+  <div className="text-xs opacity-70 capitalize">{user.designation || user.role}</div>
+</Link>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-sm transition-colors"
