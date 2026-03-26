@@ -25,7 +25,7 @@ export default function CitizenDashboard() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['complaints', 'citizen'],
+    queryKey: ['complaints', 'citizen', user?.id],
     queryFn: () => complaintsApi.list(),
     enabled: !!user,
   });
@@ -141,29 +141,67 @@ export default function CitizenDashboard() {
           ) : complaints.length === 0 ? (
             <EmptyState title="No grievances yet" desc="Register your first grievance" icon={<FileText />} />
           ) : (
-            <div className="divide-y">
-              {complaints.map(c => (
-                <Link key={c.id} href={`/citizen/track/${c.id}`} className="flex justify-between p-4 hover:bg-gray-50">
-                  <div>
-                    <div className="flex gap-2">
-                      <span className="text-xs text-blue-700">{c.id}</span>
-                      <StatusBadge status={c.status} />
-                      <UrgencyBadge urgency={c.urgency} />
-                    </div>
+            <div className="divide-y divide-gray-100">
+  {complaints.map(c => (
+    <Link
+      key={c.id}
+      href={`/citizen/track/${c.id}`}
+      className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors group border-l-4 
+      ${c.urgency === 'high' ? 'border-l-red-500' :
+        c.urgency === 'medium' ? 'border-l-yellow-500' : 'border-l-blue-400'}"
+    >
+      <div className="flex-1 min-w-0">
+        
+        {/* TOP LINE */}
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
 
-                    <p className="text-sm">{c.category} — {c.ministry_name}</p>
+          {/* 💬 Chat Badge */}
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+            💬 Chat Available
+          </span>
 
-                    {/* 🔴 UNREAD BADGE */}
-                    {unreadMap[c.id] && (
-                      <span className="text-xs text-red-500 font-semibold">
-                        🔴 {unreadMap[c.id]} new message(s)
-                      </span>
-                    )}
-                  </div>
-                  <ChevronRight />
-                </Link>
-              ))}
-            </div>
+          {/* ID */}
+          <span className="font-mono text-xs text-blue-700 font-semibold">
+            {c.id}
+          </span>
+
+          <StatusBadge status={c.status} />
+          <UrgencyBadge urgency={c.urgency} />
+
+          {/* 🔴 Unread */}
+          {unreadMap[c.id] && (
+            <span className="text-xs text-red-500 font-semibold">
+              🔴 {unreadMap[c.id]}
+            </span>
+          )}
+        </div>
+
+        {/* TITLE */}
+        <p className="text-sm font-medium text-gray-800 truncate">
+          {c.category} — {c.ministry_name}
+        </p>
+
+        {/* DESCRIPTION */}
+        <p className="text-xs text-gray-500 truncate mt-0.5">
+          {c.description}
+        </p>
+
+        {/* BOTTOM INFO */}
+        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
+          <span>{c.officer_name || 'Not Assigned'}</span>
+          <span>·</span>
+          <span>{c.location}</span>
+          <span>·</span>
+          <span>
+            {formatDistanceToNow(new Date(c.submitted_at), { addSuffix: true })}
+          </span>
+        </div>
+      </div>
+
+      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 ml-4" />
+    </Link>
+  ))}
+</div>
           )}
         </div>
 

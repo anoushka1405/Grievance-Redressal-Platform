@@ -1,6 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/lib/types';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthCtx {
   user: User | null;
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const qc = useQueryClient();
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -28,18 +30,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (t: string, u: User) => {
-    setToken(t);
-    setUser(u);
-    localStorage.setItem('token', t);
-    localStorage.setItem('user', JSON.stringify(u));
-  };
+  qc.clear(); // 🔥 clears old user's cache
+
+  setToken(t);
+  setUser(u);
+
+  localStorage.setItem('token', t);
+  localStorage.setItem('user', JSON.stringify(u));
+};
 
   const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  };
+  qc.clear(); // 🔥 clears cache
+
+  setToken(null);
+  setUser(null);
+
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+};
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>

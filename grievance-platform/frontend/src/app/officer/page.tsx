@@ -34,7 +34,7 @@ export default function OfficerDashboard() {
   }, [user, authLoading, router]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['complaints', 'officer', statusFilter, urgencyFilter, search],
+    queryKey: ['complaints', 'officer', user?.id, statusFilter, urgencyFilter, search],
     queryFn: () => complaintsApi.list({
       ...(statusFilter !== 'all' && { status: statusFilter }),
       ...(urgencyFilter !== 'all' && { urgency: urgencyFilter }),

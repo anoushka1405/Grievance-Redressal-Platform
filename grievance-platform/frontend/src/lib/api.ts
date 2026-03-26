@@ -68,7 +68,7 @@ export const officersApi = {
 
   getById: (id: string) => api.get(`/officers/${id}`),
 
-  topPerformers: () => api.get('/officers/top'),
+  topPerformers: () => api.get('/officers/top-performers'),
 };
 
 // ── Ministries (Public List) ──
