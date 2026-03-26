@@ -294,7 +294,7 @@ export default function MinistryRegistry() {
                                   {ministryOfficers.map(o => (
                                     <div
                                       key={o.id}
-                                      onClick={() => router.push(`/officer/chat/${o.id}`)}
+                                      onClick={() => router.push(`/ministry/officers/${o.id}`)}
                                       className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-all shadow-sm"
                                     >
                                       <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold">
@@ -336,7 +336,7 @@ export default function MinistryRegistry() {
             {(topData?.data?.officers || []).slice(0, 5).map((o: any, i: number) => (
               <div
                 key={o.id}
-                onClick={() => router.push(`/officer/chat/${o.id}`)}
+                onClick={() => router.push(`/ministry/officers/${o.id}`)}
                 className="min-w-[220px] bg-white border rounded-xl p-4 flex-shrink-0 text-center hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer"
               >
                 <div className={`text-2xl mb-1 ${i === 0 ? 'text-yellow-500' :

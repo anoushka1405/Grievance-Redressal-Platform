@@ -67,10 +67,11 @@ export const messagesApi = {
 
 // ── Officers ──
 export const officersApi = {
+  
   list: () => api.get('/officers'),
 
   getById: (id: string) => api.get(`/officers/${id}`),
-
+  
   topPerformers: () => api.get('/officers/top-performers'),
 };
 
