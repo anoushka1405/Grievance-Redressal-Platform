@@ -34,6 +34,21 @@ export default function ChatPage({ backHref }: { backHref: string }) {
     }
   };
 
+  const handleLanguageClick = async (text: string, lang: string) => {
+  setShowPopup(true);
+  setLoadingTranslate(true);
+
+  // Translate for popup
+  const translated = await translateText(text, lang);
+  setTranslatedText(translated);
+  setLoadingTranslate(false);
+
+  // 🔊 Speak ONLY for English & Hindi
+  if (lang === 'en' || lang === 'hi') {
+    speak(text, lang);
+  }
+};
+
   // ✅ FIX 2: Proper speech with voice selection
   const speak = async (text: string, lang: string = 'en') => {
     try {
@@ -80,7 +95,11 @@ export default function ChatPage({ backHref }: { backHref: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [text, setText] = useState('');
+  const [translatedText, setTranslatedText] = useState('');
+const [showPopup, setShowPopup] = useState(false);
+const [loadingTranslate, setLoadingTranslate] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   // ✅ FIX 4: ensure voices load (VERY IMPORTANT)
   useEffect(() => {
@@ -90,6 +109,38 @@ export default function ChatPage({ backHref }: { backHref: string }) {
     };
   }, []);
 
+  useEffect(() => {
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    console.warn('Speech recognition not supported');
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  // Auto-detect language (best effort)
+  recognition.lang = 'en-US';
+
+  recognition.onresult = async (event: any) => {
+    const spokenText = event.results[0][0].transcript;
+
+    // 🔥 Translate spoken text to English
+    const translated = await translateText(spokenText, 'en');
+
+    setText(translated);
+  };
+
+  recognition.onerror = (err: any) => {
+    console.error('Speech recognition error:', err);
+  };
+
+  recognitionRef.current = recognition;
+}, []);
   const { data: complaintData } = useQuery({
     queryKey: ['complaint', id],
     queryFn: () => complaintsApi.get(id),
@@ -176,18 +227,17 @@ export default function ChatPage({ backHref }: { backHref: string }) {
 
                   {/* ✅ LANGUAGE BUTTONS */}
                   <div className="flex flex-wrap gap-2 mt-1 text-xs">
-                    <button onClick={() => speak(m.message, 'en')} className="text-blue-500">EN</button>
-                    <button onClick={() => speak(m.message, 'hi')} className="text-green-600">हिंदी</button>
-                    <button onClick={() => speak(m.message, 'bn')} className="text-purple-600">বাংলা</button>
-                    <button onClick={() => speak(m.message, 'gu')} className="text-orange-600">ગુજરાતી</button>
-                    <button onClick={() => speak(m.message, 'pa')} className="text-yellow-600">ਪੰਜਾਬੀ</button>
-                    <button onClick={() => speak(m.message, 'or')} className="text-pink-600">ଓଡ଼ିଆ</button>
-                    <button onClick={() => speak(m.message, 'kn')} className="text-indigo-600">ಕನ್ನಡ</button>
-                    <button onClick={() => speak(m.message, 'ml')} className="text-teal-600">മലയാളം</button>
-                    <button onClick={() => speak(m.message, 'te')} className="text-red-600">తెలుగు</button>
-                    <button onClick={() => speak(m.message, 'ta')} className="text-gray-700">தமிழ்</button>
-                    <button onClick={() => speak(m.message, 'bhojpuri')} className="text-black">Bhojpuri</button>
-                  </div>
+  <button onClick={() => handleLanguageClick(m.message, 'en')} className="text-blue-500">EN</button>
+  <button onClick={() => handleLanguageClick(m.message, 'hi')} className="text-green-600">हिंदी</button>
+  <button onClick={() => handleLanguageClick(m.message, 'bn')} className="text-purple-600">বাংলা</button>
+  <button onClick={() => handleLanguageClick(m.message, 'gu')} className="text-orange-600">ગુજરાતી</button>
+  <button onClick={() => handleLanguageClick(m.message, 'mr')} className="text-pink-600">मराठी</button>
+  <button onClick={() => handleLanguageClick(m.message, 'pa')} className="text-yellow-600">ਪੰਜਾਬੀ</button>
+  <button onClick={() => handleLanguageClick(m.message, 'kn')} className="text-indigo-600">ಕನ್ನಡ</button>
+  <button onClick={() => handleLanguageClick(m.message, 'ml')} className="text-teal-600">മലയാളം</button>
+  <button onClick={() => handleLanguageClick(m.message, 'te')} className="text-red-600">తెలుగు</button>
+  <button onClick={() => handleLanguageClick(m.message, 'ta')} className="text-gray-700">தமிழ்</button>
+</div>
 
                   <div className={clsx('text-xs mt-1', isMe ? 'text-blue-200' : 'text-gray-400')}>
                     {format(new Date(m.created_at), 'h:mm a')}
@@ -200,7 +250,7 @@ export default function ChatPage({ backHref }: { backHref: string }) {
           <div ref={bottomRef} />
         </div>
 
-        <div className="card p-3 flex gap-2">
+        <div className="card p-3 flex gap-2 items-center">
           <input
             className="input flex-1"
             placeholder={complaint?.status === 'resolved' ? 'Complaint is resolved' : 'Type a message...'}
@@ -209,6 +259,14 @@ export default function ChatPage({ backHref }: { backHref: string }) {
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
             disabled={complaint?.status === 'resolved'}
           />
+          {/* 🎤 Mic Button */}
+  <button
+    onClick={() => recognitionRef.current?.start()}
+    className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+  >
+    🎤
+  </button>
+  {/* Send button */}
           <button
             onClick={handleSend}
             disabled={!text.trim() || sendMutation.isPending}
@@ -218,6 +276,30 @@ export default function ChatPage({ backHref }: { backHref: string }) {
           </button>
         </div>
       </div>
+      {showPopup && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-5 max-w-sm w-full shadow-lg relative">
+
+      {/* Close button */}
+      <button
+        onClick={() => setShowPopup(false)}
+        className="absolute top-2 right-3 text-gray-400 hover:text-gray-600 text-lg"
+      >
+        ✕
+      </button>
+
+      <h3 className="font-semibold text-gray-800 mb-2">Translated Text</h3>
+
+      {loadingTranslate ? (
+        <p className="text-sm text-gray-400">Translating...</p>
+      ) : (
+        <p className="text-sm text-gray-700 leading-relaxed">
+          {translatedText}
+        </p>
+      )}
+    </div>
+  </div>
+)}
     </div>
   );
 }
