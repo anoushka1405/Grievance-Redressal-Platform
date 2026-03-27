@@ -109,8 +109,7 @@ export const aiApi = {
   suggestMinistry: (description: string) =>
     api.post('/ai/suggest-ministry', { description }),
 
-  chatAssistant: (message: string, history: any[]) =>
-    api.post('/ai/chat-assistant', { message, history }),
+  chat: (message: string, history: any[]) => api.post('/ai/chat-assistant', { message, history }),
 };
 // ── AI ──
 // export const aiApi = {
