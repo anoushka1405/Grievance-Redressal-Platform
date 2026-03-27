@@ -103,3 +103,9 @@ export const ministryApi = {
   deleteOfficer: (id: string) => 
     api.delete(`/officers/${id}`)
 };
+
+// ── AI ──
+export const aiApi = {
+  suggestMinistry: (description: string) =>
+    api.post('/ai/suggest-ministry', { description }),
+};

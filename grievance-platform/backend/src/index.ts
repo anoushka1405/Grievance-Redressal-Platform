@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import dotenv from 'dotenv';
 import fs from 'fs';
+import aiRoutes from './routes/ai';
 
 dotenv.config();
 import authRoutes from './routes/auth';
@@ -44,6 +45,7 @@ app.use('/api/complaints', complaintRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/officers', officerRouter);
 app.use('/api/ministries', ministryRouter);
+app.use('/api/ai', aiRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

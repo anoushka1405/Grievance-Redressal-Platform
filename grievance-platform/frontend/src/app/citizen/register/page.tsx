@@ -10,6 +10,7 @@ import { Ministry } from '@/lib/types';
 import { CheckCircle2, Search, Upload, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { aiApi } from '@/lib/api';
 
 const cityList = [
   "Delhi, Delhi",
@@ -44,6 +45,77 @@ export default function RegisterGrievance() {
   const [urgency, setUrgency] = useState<'low' | 'medium' | 'high'>('medium');
   const [documents, setDocuments] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAI, setShowAI] = useState(true);
+const [aiText, setAiText] = useState('');
+const [suggestions, setSuggestions] = useState<any[]>([]);
+const [loadingAI, setLoadingAI] = useState(false);
+
+// =========================
+  // ✅ ADD STEP 5 HERE (VOICE)
+  // =========================
+  const startVoice = () => {
+    const SpeechRecognition =
+      (window as any).webkitSpeechRecognition ||
+      (window as any).SpeechRecognition;
+
+    if (!SpeechRecognition) {
+      toast.error('Voice not supported');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.start();
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setAiText(prev => prev + ' ' + transcript);
+    };
+  };
+
+
+  // =========================
+  // ✅ ADD STEP 6 HERE (SUGGEST API)
+  // =========================
+  const handleSuggest = async () => {
+    if (!aiText.trim()) return;
+
+    setLoadingAI(true);
+
+    try {
+      const res = await aiApi.suggestMinistry(aiText);
+      console.log("AI RESPONSE:", res.data); // 👈 ADD THIS
+      setSuggestions(res.data.suggestions || []);
+    } catch(err) {
+      console.log(err); // 👈 ADD THIS
+      toast.error('Failed to get suggestions');
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+
+  // =========================
+  // ✅ ADD STEP 7 HERE (TRANSLATE + SPEAK)
+  // =========================
+  const translate = async (text: string, lang: string) => {
+    const res = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`
+    );
+    const data = await res.json();
+    return data[0].map((i: any) => i[0]).join('');
+  };
+
+  const speakText = async (text: string, lang: 'en' | 'hi') => {
+    const translated = await translate(text, lang);
+
+    const utter = new SpeechSynthesisUtterance(translated);
+    utter.lang = lang === 'hi' ? 'hi-IN' : 'en-US';
+
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utter);
+  };
+
   interface MinistriesResponse {
     ministries: Ministry[];
   }
@@ -97,6 +169,7 @@ const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
 
   if (!user) return null;
 
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <GovHeader title="Register Grievance" subtitle="National Grievance Portal" backHref="/citizen" />
@@ -122,6 +195,60 @@ const selectedM = ministries.find((m: Ministry) => m.id === selectedMinistry);
       )}
 
       <div className="container mx-auto px-4 py-8 max-w-2xl">
+        {showAI && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-xl w-full max-w-lg space-y-4">
+      
+      <h2 className="font-bold text-lg">Describe your issue</h2>
+
+      <textarea
+        className="input w-full"
+        rows={3}
+        value={aiText}
+        onChange={(e) => setAiText(e.target.value)}
+      />
+
+      <div className="flex gap-2">
+        <button onClick={startVoice} className="btn-secondary">
+          🎤 Speak
+        </button>
+
+        <button onClick={handleSuggest} className="btn-primary">
+          Suggest
+        </button>
+      </div>
+
+      {loadingAI && <p className="text-sm">Analyzing...</p>}
+
+      {suggestions.map((s, i) => (
+        <div key={i} className="border p-3 rounded">
+          <p className="font-semibold">{s.name}</p>
+          <p className="text-xs text-gray-500">{s.reason}</p>
+
+<div className="text-[10px] text-gray-400 mt-1">
+  (Click 🔊 to hear in Hindi / English)
+</div>
+
+          <div className="flex gap-2 mt-2 text-xs">
+            <button onClick={() => speakText(s.name + ' ' + s.reason, 'en')}>
+              🔊 EN
+            </button>
+            <button onClick={() => speakText(s.name + ' ' + s.reason, 'hi')}>
+              🔊 हिंदी
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <button
+        onClick={() => setShowAI(false)}
+        className="w-full mt-2 btn-secondary"
+      >
+        Continue
+      </button>
+    </div>
+  </div>
+)}
         <AnimatePresence mode="wait">
           {/* Step 1 — Ministry */}
           {step === 1 && (
