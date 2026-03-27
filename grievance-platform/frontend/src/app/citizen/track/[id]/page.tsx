@@ -10,7 +10,6 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
-
 const TIMELINE_STEPS = ['submitted', 'assigned', 'in-progress', 'resolved'] as const;
 
 function stepIndex(status: string) {
@@ -24,6 +23,7 @@ export default function TrackComplaint() {
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [showAppeal, setShowAppeal] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['complaint', id],
@@ -45,6 +45,18 @@ window.dispatchEvent(new Event('ratingSubmitted'));
     } catch { toast.error('Failed to submit rating'); }
     finally { setRatingLoading(false); }
   };
+
+  const handleAppeal = async (type: 'same' | 'new') => {
+  try {
+    await complaintsApi.appeal(id, type);
+
+    toast.success('Appeal submitted!');
+    setShowAppeal(false);
+    refetch();
+  } catch (err) {
+    toast.error('Appeal failed');
+  }
+};
 
   if (isLoading) return <PageLoader />;
   if (!complaint) return (
@@ -145,6 +157,22 @@ window.dispatchEvent(new Event('ratingSubmitted'));
           </div>
         )}
 
+        {/* Appeal Section */}
+{complaint.status === 'resolved' && (
+  <div className="card p-5 border border-yellow-300 bg-yellow-50">
+    <p className="text-sm text-yellow-800 mb-3">
+      Not satisfied with the resolution?
+    </p>
+
+    <button
+      onClick={() => setShowAppeal(true)}
+      className="btn-primary text-sm"
+    >
+      Appeal
+    </button>
+  </div>
+)}
+
         {/* Rate officer (only if resolved + not yet rated) */}
         {complaint.status === 'resolved' && !complaint.citizen_rating && (
           <div className="card p-5">
@@ -206,6 +234,35 @@ window.dispatchEvent(new Event('ratingSubmitted'));
             </div>
           </div>
         )}
+        {showAppeal && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-xl w-full max-w-md space-y-4">
+      
+      <h2 className="font-bold text-lg">Appeal Options</h2>
+
+      <button
+        onClick={() => handleAppeal('same')}
+        className="w-full btn-secondary"
+      >
+        Appeal to Same Officer
+      </button>
+
+      <button
+        onClick={() => handleAppeal('new')}
+        className="w-full btn-primary"
+      >
+        Appeal to Another Officer
+      </button>
+
+      <button
+        onClick={() => setShowAppeal(false)}
+        className="w-full text-sm text-gray-500"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

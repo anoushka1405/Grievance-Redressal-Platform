@@ -55,6 +55,10 @@ export const complaintsApi = {
     }),
   rate: (id: string, rating: number, review?: string) =>
     api.post(`/complaints/${id}/rate`, { rating, review }),
+  appeal: (id: string, type: 'same' | 'new') =>
+  api.post(`/complaints/${id}/appeal`, { type }),
+  forward: (id: string) =>
+  api.post(`/complaints/${id}/forward`),
 };
 
 // ── Messages ──

@@ -136,58 +136,32 @@ router.post('/suggest-ministry', async (req, res: Response) => {
     );
 
     const ministries = ministriesRes.rows;
-    const desc = description.toLowerCase();
+    const descWords: string[] = description.toLowerCase().replace(/[^\w\s]/g, '').split(' ').filter((w: string) => w.length > 2);
 
-const suggestions = ministries.map((m: any) => {
-  let score = 0;
-  let reasons: string[] = [];
+    const suggestions = ministries.map((m: any) => {
+      let score = 0;
+      let matchedWords: string[] = [];
+      const categories: string[] = (m.categories || []).map((c: string) => c.toLowerCase());
 
-  const name = m.name.toLowerCase();
-  const categories: string[] = (m.categories || []).map((c: string) => c.toLowerCase());
-
-  // 🔹 Match with ministry name
-  if (desc.includes(name)) {
-    score += 3;
-    reasons.push(`Direct match with ministry name`);
-  }
-
-  // 🔹 Match with categories
-  categories.forEach((cat: string) => {
-    if (desc.includes(cat)) {
-      score += 2;
-      reasons.push(cat);
-    }
-  });
-
-  // 🔹 Word-based matching
-  const words = desc.split(/\s+/);
-  words.forEach((word: string) => {
-    if (word.length > 3) {
-      if (name.includes(word)) {
-        score += 2;
-        reasons.push(word);
-      }
-      categories.forEach((cat: string) => {
-        if (cat.includes(word)) {
-          score += 1;
-          reasons.push(word);
-        }
+      descWords.forEach((word: string) => {
+        categories.forEach((cat: string) => {
+          if (cat.includes(word) || word.includes(cat)) {
+            score += 2;
+            matchedWords.push(word);
+          }
+        });
       });
-    }
-  });
 
-  return {
-    id: m.id,
-    name: m.name,
-    score,
-    reason: reasons.length > 0
-      ? `Matches: ${[...new Set(reasons)].join(', ')}`
-      : '',
-  };
-})
-.filter((m: any) => m.score > 0)
-.sort((a: any, b: any) => b.score - a.score)
-.slice(0, 3);
+      return {
+        id: m.id,
+        name: m.name,
+        score,
+        reason: matchedWords.length > 0 ? `Matches keywords: ${[...new Set(matchedWords)].join(', ')}` : '',
+      };
+    })
+      .filter((m: any) => m.score > 0)
+      .sort((a: any, b: any) => b.score - a.score)
+      .slice(0, 3);
 
     if (suggestions.length === 0) {
       const fallback = ministries.slice(0, 3).map((m: any) => ({ ...m, reason: 'General Match' }));

@@ -70,6 +70,20 @@ export default function ComplaintDetail() {
 },
   });
 
+  const handleForward = async () => {
+  try {
+    await complaintsApi.forward(id);
+
+    toast.success('Complaint forwarded successfully');
+
+    qc.invalidateQueries({ queryKey: ['complaint', id] });
+    qc.invalidateQueries({ queryKey: ['complaints'] });
+
+  } catch (err) {
+    toast.error('Failed to forward complaint');
+  }
+};
+
   if (isLoading) return <PageLoader />;
   const complaint: Complaint | undefined = data?.data;
   if (!complaint) return null;
@@ -239,7 +253,21 @@ export default function ComplaintDetail() {
               <p className="text-sm text-gray-600">{complaint.resolution_notes}</p>
             </div>
           )}
+          {/* Forward Complaint */}
+{canUpdate && (
+  <div className="card p-5 border border-blue-200 bg-blue-50">
+    <p className="text-sm text-blue-800 mb-3">
+      Not available to handle this issue?
+    </p>
 
+    <button
+      onClick={handleForward}
+      className="btn-primary w-full text-sm"
+    >
+      Forward to Another Officer
+    </button>
+  </div>
+)}
           {complaint.citizen_rating && (
             <div className="card p-4 bg-yellow-50 border-yellow-200">
               <div className="text-sm font-medium text-yellow-800">Citizen Rating: {complaint.citizen_rating}/5 ⭐</div>

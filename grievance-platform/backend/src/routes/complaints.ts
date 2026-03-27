@@ -339,4 +339,141 @@ router.post('/:id/rate', requireRole('citizen'), async (req: AuthRequest, res: R
   }
 });
 
+// POST /api/complaints/:id/appeal
+router.post('/:id/appeal', requireRole('citizen'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { type } = req.body;
+
+    const complaintRes = await pool.query(
+      `SELECT * FROM complaints WHERE id = $1`,
+      [req.params.id]
+    );
+
+    if (!complaintRes.rows[0]) {
+      return res.status(404).json({ error: 'Complaint not found' });
+    }
+
+    const complaint = complaintRes.rows[0];
+
+    // ✅ SAME OFFICER
+    if (type === 'same') {
+      await pool.query(
+        `UPDATE complaints
+         SET status = 'submitted',
+             updated_at = NOW()
+         WHERE id = $1`,
+        [req.params.id]
+      );
+
+      await pool.query(
+        `INSERT INTO complaint_history (complaint_id, changed_by_name, old_status, new_status, note)
+         VALUES ($1, $2, $3, 'submitted', 'Re-appealed to same officer')`,
+        [req.params.id, req.user!.name, complaint.status]
+      );
+    }
+
+    // ✅ NEW OFFICER
+    if (type === 'new') {
+      const newOfficerRes = await pool.query(
+        `SELECT u.id, u.name FROM officers o
+         JOIN users u ON u.id = o.id
+         WHERE o.ministry_id = $1 AND u.is_active = true
+         ORDER BY RANDOM()
+         LIMIT 1`,
+        [complaint.ministry_id]
+      );
+
+      const newOfficer = newOfficerRes.rows[0];
+
+      await pool.query(
+        `UPDATE complaints
+         SET status = 'submitted',
+             assigned_officer_id = $1,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [newOfficer.id, req.params.id]
+      );
+
+      await pool.query(
+        `INSERT INTO complaint_history (complaint_id, changed_by_name, old_status, new_status, note)
+         VALUES ($1, $2, $3, 'submitted', $4)`,
+        [
+          req.params.id,
+          req.user!.name,
+          complaint.status,
+          `Forwarded from ${complaint.assigned_officer_id} to ${newOfficer.name}`
+        ]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Appeal failed' });
+  }
+});
+
+// POST /api/complaints/:id/forward
+router.post('/:id/forward', requireRole('officer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const complaintRes = await pool.query(
+      `SELECT * FROM complaints WHERE id = $1`,
+      [req.params.id]
+    );
+
+    if (!complaintRes.rows[0]) {
+      return res.status(404).json({ error: 'Complaint not found' });
+    }
+
+    const complaint = complaintRes.rows[0];
+
+    // 🔥 Find another officer (same ministry but NOT current)
+    const newOfficerRes = await pool.query(
+      `SELECT u.id, u.name FROM officers o
+       JOIN users u ON u.id = o.id
+       WHERE o.ministry_id = $1 
+         AND u.is_active = true
+         AND u.id != $2
+       ORDER BY RANDOM()
+       LIMIT 1`,
+      [complaint.ministry_id, complaint.assigned_officer_id]
+    );
+
+    if (!newOfficerRes.rows[0]) {
+      return res.status(400).json({ error: 'No other officer available' });
+    }
+
+    const newOfficer = newOfficerRes.rows[0];
+
+    // 🔁 Update complaint
+    await pool.query(
+      `UPDATE complaints
+       SET assigned_officer_id = $1,
+           status = 'submitted',
+           updated_at = NOW()
+       WHERE id = $2`,
+      [newOfficer.id, req.params.id]
+    );
+
+    // 📝 History
+    await pool.query(
+      `INSERT INTO complaint_history 
+       (complaint_id, changed_by, changed_by_name, old_status, new_status, note)
+       VALUES ($1, $2, $3, $4, 'submitted', $5)`,
+      [
+        req.params.id,
+        req.user!.id,
+        req.user!.name,
+        complaint.status,
+        `Forwarded from ${req.user!.name} to ${newOfficer.name}`
+      ]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Forward failed' });
+  }
+});
 export default router;

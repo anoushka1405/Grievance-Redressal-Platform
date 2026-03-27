@@ -59,11 +59,10 @@ export default function LandingPage() {
   ];
 
   const stats = [
-    { value: '2.5 Cr+', label: 'Grievances Resolved', color: 'text-green-600', border: 'border-green-500' },
-    { value: '87%', label: 'Resolution Rate', color: 'text-blue-600', border: 'border-blue-500' },
-    { value: '15 Days', label: 'Avg Resolution Time', color: 'text-purple-600', border: 'border-purple-500' },
-    { value: '24 Hrs', label: 'Officer Assignment', color: 'text-orange-600', border: 'border-orange-500' },
-  ];
+  { value: '21 Days', label: 'Max Resolution Time', color: 'text-green-600', border: 'border-green-500' },
+  { value: 'Immediate', label: 'Officer Assignment After Registration', color: 'text-blue-600', border: 'border-blue-500' },
+  { value: '30 Days', label: 'Reappeal Window Available', color: 'text-purple-600', border: 'border-purple-500' },
+];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
@@ -72,10 +71,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="container mx-auto px-4 py-12">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-2 rounded-full mb-4 text-sm font-medium">
-            <Shield className="w-4 h-4" />
-            Trusted by 50+ Crore Citizens
-          </div>
+          
           <h2 className="text-4xl font-bold text-gray-900 mb-3">Your Voice Matters</h2>
           <p className="text-lg text-gray-600 max-w-xl mx-auto">
             A secure, transparent platform for citizens to register grievances and track resolution in real-time.
@@ -84,7 +80,7 @@ export default function LandingPage() {
 
         {/* Stats */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 max-w-4xl mx-auto">
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 max-w-3xl mx-auto">
           {stats.map(s => (
             <div key={s.label} className={`card text-center p-4 border-t-4 ${s.border}`}>
               <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
