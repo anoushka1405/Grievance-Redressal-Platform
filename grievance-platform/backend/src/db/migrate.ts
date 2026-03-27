@@ -144,10 +144,10 @@ const migrate = async () => {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_history_complaint ON complaint_history(complaint_id);`);
 
     await client.query('COMMIT');
-    console.log('✅ Migration complete — all tables created');
+    console.log('Migration complete — all tables created');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Migration failed:', err);
+    console.error('Migration failed:', err);
     throw err;
   } finally {
     client.release();

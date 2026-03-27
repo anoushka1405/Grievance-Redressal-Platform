@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+//creates a connection pool manager 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   host: process.env.DB_HOST || 'localhost',
@@ -16,11 +17,11 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL');
+  console.log('Connected to PostgreSQL');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ PostgreSQL pool error:', err);
+  console.error('PostgreSQL pool error:', err);
 });
 
 export default pool;
