@@ -104,8 +104,16 @@ export const ministryApi = {
     api.delete(`/officers/${id}`)
 };
 
-// ── AI ──
+// ── AI APIs ──
 export const aiApi = {
-  suggest: (description: string) => api.post('/ai/suggest-ministry', { description }),
-  chat: (message: string, history: any[]) => api.post('/ai/chat-assistant', { message, history }),
+  suggestMinistry: (description: string) =>
+    api.post('/ai/suggest-ministry', { description }),
+
+  chatAssistant: (message: string, history: any[]) =>
+    api.post('/ai/chat-assistant', { message, history }),
 };
+// ── AI ──
+// export const aiApi = {
+//   suggest: (description: string) => api.post('/ai/suggest-ministry', { description }),
+//   chat: (message: string, history: any[]) => api.post('/ai/chat-assistant', { message, history }),
+// };
